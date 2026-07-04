@@ -1,5 +1,7 @@
 from collections.abc import AsyncGenerator
 
+import aioboto3
+import boto3
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import (
@@ -8,6 +10,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from types_aiobotocore_s3.client import S3Client
 
 from .config import Config
 
@@ -18,7 +21,7 @@ class InfrastructureProvider(Provider):
         return Config()
 
     @provide(scope=Scope.APP)
-    async def async_redis_client(self, config: Config) -> AsyncGenerator[Redis, None]:
+    async def async_redis_client(self, config: Config) -> AsyncGenerator[Redis]:
         client = Redis.from_url(config.redis.get_dsn())
         try:
             yield client
@@ -26,7 +29,21 @@ class InfrastructureProvider(Provider):
             await client.aclose()
 
     @provide(scope=Scope.APP)
-    async def async_engine(self, config: Config) -> AsyncGenerator[AsyncEngine, None]:
+    def s3_session(self) -> aioboto3.Session:
+        return aioboto3.Session()
+
+    @provide(scope=Scope.APP)
+    async def s3_client(self, config: Config, session: aioboto3.Session) -> AsyncGenerator[S3Client]:
+        async with session.client(
+            "s3",
+            endpoint_url=config.minio.url,
+            aws_access_key_id=config.minio.access_key_id,
+            aws_secret_access_key=config.minio.secret_access_key,
+        ) as client:
+            yield client
+
+    @provide(scope=Scope.APP)
+    async def async_engine(self, config: Config) -> AsyncGenerator[AsyncEngine]:
         engine = create_async_engine(config.postgres.get_dsn(sync=False))
         try:
             yield engine
