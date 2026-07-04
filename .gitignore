@@ -1,0 +1,55 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Chache
+__pycache__
+.mypy_cache
+
+# Python cache / artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.ruff_cache/
+.poetry/
+
+# IDE / editors
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Log
+logs/
+*.log
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Env
+*.env
+!.env.example
+!*.env.example
+
+# Runtime data
+datasets/
+tmp/
+.cache/
+output/
+*.bak/
