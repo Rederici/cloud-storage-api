@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 
 from src.core import Config
 from src.core.security import security
+from src.storage.service import StorageService
 from src.user import UserService
 from src.user.models import User
 
@@ -25,8 +26,17 @@ class AuthProvider(Provider):
         return SessionService(config, session_repo)
 
     @provide(scope=Scope.REQUEST)
-    def auth_service(self, session_service: SessionService, user_service: UserService) -> AuthService:
-        return AuthService(session_service=session_service, user_service=user_service)
+    def auth_service(
+        self,
+        session_service: SessionService,
+        user_service: UserService,
+        storage_service: StorageService,
+    ) -> AuthService:
+        return AuthService(
+            session_service=session_service,
+            user_service=user_service,
+            storage_service=storage_service,
+        )
 
 
 def get_token(credentials: Annotated[str, Depends(security)]) -> str | None:
@@ -38,9 +48,7 @@ SessionToken = Annotated[str, Depends(get_token)]
 
 @inject
 async def get_current_user(
-        token: SessionToken,
-        user_service: FromDishka[UserService],
-        session_service: FromDishka[SessionService]
+    token: SessionToken, user_service: FromDishka[UserService], session_service: FromDishka[SessionService]
 ) -> User:
     session = await session_service.find_by_token(token)
     if session is None:

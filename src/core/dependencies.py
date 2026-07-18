@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 
 import aioboto3
-import boto3
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import (

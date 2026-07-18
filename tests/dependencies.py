@@ -10,7 +10,7 @@ from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
 from src.core import Config, InfrastructureProvider
-from src.core.config import MinioConfig, PostgresConfig, RedisConfig
+from src.core.config import Env, MinioConfig, PostgresConfig, RedisConfig
 
 
 class TestInfrastructureProvider(InfrastructureProvider):
@@ -31,10 +31,7 @@ class TestInfrastructureProvider(InfrastructureProvider):
 
     @provide(scope=Scope.APP, override=True)
     def config(
-            self,
-            postgres_container: PostgresContainer,
-            redis_container: RedisContainer,
-            minio_container: MinioContainer
+        self, postgres_container: PostgresContainer, redis_container: RedisContainer, minio_container: MinioContainer
     ) -> Config:
         config = Config(
             postgres=PostgresConfig(
@@ -42,18 +39,20 @@ class TestInfrastructureProvider(InfrastructureProvider):
                 port=postgres_container.get_exposed_port(5432),
                 username=postgres_container.username,
                 password=postgres_container.password,
-                database=postgres_container.dbname
+                database=postgres_container.dbname,
             ),
             redis=RedisConfig(
                 host=redis_container.get_container_host_ip(),
                 port=redis_container.get_exposed_port(6379),
-                database=0
+                database=0,
             ),
             minio=MinioConfig(
                 host=minio_container.get_container_host_ip(),
                 port=minio_container.get_exposed_port(9000),
-                bucket="TestBucket"
-            )
+                bucket="TestBucket",
+                ssl=False,
+            ),
+            env=Env.DEV,
         )
 
         self.migrate(config.postgres.get_dsn(sync=True))

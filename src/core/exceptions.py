@@ -1,3 +1,5 @@
+from typing import Any
+
 from starlette import status
 
 from src.core.schemas import ErrorResponse
@@ -7,9 +9,22 @@ class AppError(Exception):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     message = "Unknown error"
 
-    def __init__(self, status_code: int | None = None, detail: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        status_code: int | None = None,
+        message: str | None = None,
+        **params: Any,
+    ) -> None:
         self.status_code = status_code or self.__class__.status_code
-        self.message = detail or self.__class__.message
+        template = message or self.__class__.message
+
+        try:
+            self.message = template.format(**params)
+        except KeyError as e:
+            missing_param = e.args[0]
+            raise TypeError(f"Missing error message parameter: {missing_param!r}") from e
+
         super().__init__(self.message)
 
     def to_model(self) -> ErrorResponse:

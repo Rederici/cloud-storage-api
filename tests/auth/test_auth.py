@@ -11,19 +11,37 @@ async def test_register_success(client: AsyncClient, user: CredentialsRequest):
     assert SESSION_COOKIE_NAME in response.cookies
 
 
-@pytest.mark.parametrize("invalid_payload", [
-    {"username": "inv@lid-us3rn4me", "password": "Valid_Password123"},
-    {"username": "sml", "password": "Valid_Password123"},
-    {"username": "VeryVeryVeryVeryVeryLongUsername", "password": "Valid_Password123"},
-    {"username": "valid_username", "password": "Ez@1pw"},
-    {"username": "valid_username", "password": "Long@1pwd" * 10},
-    {"username": "valid_username", "password": "nouppercase123!"},
-    {"username": "valid_username", "password": "NOLOWERCASE123!"},
-    {"username": "valid_username", "password": "NoDigitsHere!!"},
-    {"username": "valid_username", "password": "NoSpecial12345"},
-    {"username": "valid_username"},
-    {"password": "Valid_Password123"},
-])
+@pytest.mark.parametrize(
+    "invalid_payload",
+    [
+        {"username": "inv@lid-us3rn4me", "password": "Valid_Password123"},
+        {"username": "sml", "password": "Valid_Password123"},
+        {"username": "VeryVeryVeryVeryVeryLongUsername", "password": "Valid_Password123"},
+        {"username": "valid_username", "password": "Ez@1pw"},
+        {"username": "valid_username", "password": "Long@1pwd" * 10},
+        {"username": "valid_username", "password": "nouppercase123!"},
+        {"username": "valid_username", "password": "NOLOWERCASE123!"},
+        {"username": "valid_username", "password": "NoDigitsHere!!"},
+        {"username": "valid_username", "password": "NoSpecial12345"},
+        {"username": "valid_username"},
+        {"password": "Valid_Password123"},
+        {},
+    ],
+    ids=[
+        "username-with-forbidden-characters",
+        "username-too-short",
+        "username-too-long",
+        "password-too-short",
+        "password-too-long",
+        "password-without-uppercase",
+        "password-without-lowercase",
+        "password-without-digit",
+        "password-without-special-character",
+        "missing-password",
+        "missing-username",
+        "missing-username-and-password",
+    ],
+)
 async def test_register_invalid_payload_returns_422(client: AsyncClient, invalid_payload: dict):
     response = await client.post("/api/v1/auth/sign-up", json=invalid_payload)
     assert response.status_code == 422
@@ -71,6 +89,7 @@ async def test_get_user_info(client: AsyncClient, registered_user: CredentialsRe
 async def test_get_user_info_with_empty_token_returns_401(client: AsyncClient):
     response = await client.get("/api/v1/users/me")
     assert response.status_code == 401
+
 
 async def test_get_user_info_with_invalid_token_returns_401(client: AsyncClient, registered_user: CredentialsRequest):
     client.cookies.set(SESSION_COOKIE_NAME, str(client.cookies.get(SESSION_COOKIE_NAME)) + "A")

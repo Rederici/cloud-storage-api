@@ -3,24 +3,20 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from dishka import AsyncContainer, Scope, make_async_container
+from asgi_lifespan import LifespanManager
+from dishka import AsyncContainer, Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from src.auth import AuthProvider
 from src.auth.schemas import CredentialsRequest
-from src.main import create_app
-from src.user import UserProvider
+from src.core import InfrastructureProvider
+from src.main import create_app, create_container
 from tests.dependencies import TestInfrastructureProvider
 
 
 @pytest_asyncio.fixture(scope="session")
 async def di_container() -> AsyncGenerator[AsyncContainer]:
-    container = make_async_container(
-        TestInfrastructureProvider(),
-        UserProvider(),
-        AuthProvider(),
-    )
+    container = create_container(InfrastructureProvider())
     yield container
     await container.close()
 
@@ -38,8 +34,16 @@ async def app(test_container: AsyncContainer) -> FastAPI:
 
 @pytest_asyncio.fixture
 async def client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with (
+        LifespanManager(app) as manager,
+        AsyncClient(
+            transport=ASGITransport(
+                app=manager.app,
+                raise_app_exceptions=True,
+            ),
+            base_url="http://test",
+        ) as client,
+    ):
         yield client
 
 

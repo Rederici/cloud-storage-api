@@ -1,10 +1,12 @@
-from dishka import AsyncContainer, make_async_container
+from dishka import AsyncContainer, Provider, make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import APIRouter, FastAPI
 
 from src.auth import AuthProvider, AuthRouter
 from src.core import AppError, InfrastructureProvider, lifespan
 from src.core.exception_handler import app_error_handler
+from src.storage import StorageProvider
+from src.storage.routes import directory_router as DirectoryRouter
 from src.user import UserProvider
 from src.user.routes import router as UserRouter
 
@@ -15,7 +17,7 @@ def setup_routes(app: FastAPI):
 
     api.include_router(AuthRouter, prefix="/auth", tags=["Auth"])
     api.include_router(UserRouter, prefix="/users", tags=["User"])
-    # api.include_router(ResourceRouter, prefix="/resource", tags=["Resource"])
+    api.include_router(DirectoryRouter, prefix="/directory", tags=["Directory"])
 
 
 def setup_exceptions_handler(app: FastAPI) -> None:
@@ -35,10 +37,13 @@ def create_app(container: AsyncContainer) -> FastAPI:
     return app
 
 
-app = create_app(
-    make_async_container(
-        InfrastructureProvider(),
+def create_container(infrastructure_provider: Provider) -> AsyncContainer:
+    return make_async_container(
+        infrastructure_provider,
         UserProvider(),
+        StorageProvider(),
         AuthProvider(),
     )
-)
+
+
+app = create_app(create_container(InfrastructureProvider()))

@@ -1,6 +1,5 @@
 from datetime import timedelta
 from enum import StrEnum
-from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import (
