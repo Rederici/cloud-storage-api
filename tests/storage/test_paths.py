@@ -234,3 +234,44 @@ def test_user_space_path_rejects_invalid_user_id(
 ) -> None:
     with pytest.raises(ValueError):
         UserSpacePath(value="/documents/", user_id=user_id)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_user_id", "expected_path"),
+    [
+        ("user-1-files", 1, "/"),
+        ("user-1-files/", 1, "/"),
+        ("user-1-files/foo", 1, "/foo"),
+        ("user-1-files/foo/bar.txt", 1, "/foo/bar.txt"),
+        ("user-999999-files/dir", 999999, "/dir"),
+    ],
+)
+def test_parse_valid_paths(value, expected_user_id, expected_path):
+    path = UserSpacePath.from_storage_key(value)
+
+    assert path.user_id == expected_user_id
+    assert str(path.public_path) == expected_path
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        "/",
+        "user-files/",
+        "user--files/",
+        "user-0-files/",
+        "user--1-files/",
+        "user-abc-files/",
+        "users-1-files/",
+        "user-1-file/",
+        "foo/user-1-files/",
+        "/user-1-files",
+        "/user-1-files/",
+        "/user-1-files/foo",
+        "/user-123-files/foo/bar.txt",
+    ],
+)
+def test_parse_invalid_paths(value):
+    with pytest.raises(ValueError):
+        UserSpacePath.from_storage_key(value)
