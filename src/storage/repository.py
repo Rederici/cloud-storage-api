@@ -3,15 +3,34 @@ from os import PathLike
 from botocore.exceptions import ClientError
 from starlette import status
 from types_aiobotocore_s3.client import S3Client
+from types_aiobotocore_s3.type_defs import CommonPrefixTypeDef, ObjectTypeDef
 
 from src.storage.exceptions import ResourceAlreadyExists, ResourceCreationConflict, StorageError
-from src.storage.types import UserSpacePath
+from src.storage.types import ResourceType, StoredResource, UserSpacePath
 
 
 class StorageRepository:
     def __init__(self, s3_client: S3Client, bucket_name: str):
         self._bucket_name = bucket_name
         self._s3 = s3_client
+
+    @staticmethod
+    def _map_s3_object(item: ObjectTypeDef) -> StoredResource:
+        path = UserSpacePath.from_storage_key(item["Key"])
+        return StoredResource(
+            path=path.public_path,
+            size=item["Size"],
+            type=ResourceType.FILE,
+        )
+
+    @staticmethod
+    def _map_s3_prefix(item: CommonPrefixTypeDef) -> StoredResource:
+        path = UserSpacePath.from_storage_key(item["Prefix"])
+        return StoredResource(
+            path=path.public_path,
+            size=0,
+            type=ResourceType.DIRECTORY,
+        )
 
     async def create_directory(self, path: UserSpacePath) -> None:
         try:
@@ -52,12 +71,16 @@ class StorageRepository:
         except ClientError:
             return None
 
-    async def list(self, path: str):
-        await self._s3.list_objects_v2(
+    async def list_directory(self, path: UserSpacePath) -> list[StoredResource]:
+        items = await self._s3.list_objects_v2(
             Bucket=self._bucket_name,
-            Prefix=path,
+            Prefix=path.storage_key,
             Delimiter="/",
         )
+
+        files = [self._map_s3_object(file) for file in items.get("Contents", [])]
+        dirs = [self._map_s3_prefix(dir) for dir in items.get("CommonPrefixes", [])]
+        return files + dirs
 
     async def get_content(self, path: PathLike): ...
 

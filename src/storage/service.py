@@ -3,7 +3,7 @@ from types_aiobotocore_s3.client import S3Client
 
 from .exceptions import ParentDirectoryDoesNotExist, ResourceAlreadyExists
 from .interface import IStorageRepository
-from .types import ResourcePath, UserSpacePath
+from .types import ResourcePath, StoredResource, UserSpacePath
 
 
 class StorageService:
@@ -26,7 +26,12 @@ class StorageService:
 
         await self._storage_repo.create_directory(user_path)
 
-    async def list_directory(self, user_id: int, path: ResourcePath) -> list: ...
+    async def list_directory(self, user_id: int, path: ResourcePath) -> list[StoredResource]:
+        items = await self._storage_repo.list_directory(UserSpacePath(value=str(path), user_id=user_id))
+        if not items:
+            raise ParentDirectoryDoesNotExist(resource=path)
+
+        return [i for i in items if i.path != path]
 
     async def get(self) -> bytes: ...
 

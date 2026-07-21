@@ -1,16 +1,11 @@
-from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import AfterValidator, BaseModel, Field
 
-from .types import ResourcePath
+from src.storage.types import StoredResource
 
-
-class ResourceType(StrEnum):
-    FILE = "file"
-    DIRECTORY = "directory"
-
+from .types import ResourcePath, ResourceType
 
 ResourceSize = Annotated[int, Field(ge=0)]
 
@@ -55,10 +50,19 @@ class DirectoryRequest(BaseModel):
 
 
 class ResourceResponse(BaseModel):
-    path: ResourcePath
+    path: str
     name: str
     size: ResourceSize
     type: ResourceType
+
+    @classmethod
+    def from_domain(cls, resource: StoredResource) -> ResourceResponse:
+        return ResourceResponse(
+            path=str(resource.path.parent),
+            name=resource.path.name,
+            size=resource.size,
+            type=resource.type,
+        )
 
 
 ResourcesResponse = list[ResourceResponse]

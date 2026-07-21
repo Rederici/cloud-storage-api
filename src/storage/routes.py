@@ -11,6 +11,7 @@ from src.storage.schemas import DirectoryRequest
 
 from .schemas import DirectoryResponse, PathRequest, ResourceResponse, ResourcesResponse
 from .service import StorageService
+from .types import StoredResource
 
 resource_router = APIRouter(route_class=DishkaRoute)
 directory_router = APIRouter(route_class=DishkaRoute)
@@ -95,7 +96,7 @@ async def upload_resource() -> ResourcesResponse: ...
     "",
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": list[ResourcesResponse], "description": "Directory found"},
+        200: {"model": ResourcesResponse, "description": "Directory found"},
         401: {"model": ErrorResponse, "description": "Unauthorized"},
         404: {"model": ErrorResponse, "description": "Directory not found"},
     },
@@ -104,9 +105,9 @@ async def list_directory(
     user: CurrentUser,
     storage_service: FromDishka[StorageService],
     query: Annotated[DirectoryRequest, Query()],
-) -> list[ResourcesResponse]:
+) -> ResourcesResponse:
     items = await storage_service.list_directory(user.id, query.path)
-    return list()
+    return [ResourceResponse.from_domain(item) for item in items]
 
 
 @directory_router.post(

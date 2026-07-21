@@ -1,4 +1,6 @@
+import re
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any, ClassVar, Self
 
 from pydantic import GetCoreSchemaHandler
@@ -139,6 +141,25 @@ class UserSpacePath(ResourcePath):
         if self.user_id <= 0:
             raise ValueError("user_id must be greater than zero")
 
+    @classmethod
+    def from_storage_key(cls, storage_key: str) -> Self:
+        if not isinstance(storage_key, str):
+            raise TypeError("Storage key must be a string")
+
+        m = re.fullmatch(
+            rf"^user-(?P<user_id>[1-9]\d*)-files"
+            rf"(?P<path>{re.escape(cls.separator)}.*)?$",
+            storage_key,
+        )
+
+        if not m:
+            raise ValueError("Invalid user space path")
+
+        return cls(
+            value=m["path"] or cls.separator,
+            user_id=int(m["user_id"]),
+        )
+
     def _spawn(self, value: str) -> Self:
         return type(self)(
             value=value,
@@ -159,3 +180,15 @@ class UserSpacePath(ResourcePath):
             return self.user_root
 
         return f"{self.user_root}{self.value.lstrip('/')}"
+
+
+class ResourceType(StrEnum):
+    FILE = "file"
+    DIRECTORY = "directory"
+
+
+@dataclass(frozen=True, slots=True)
+class StoredResource:
+    path: ResourcePath
+    size: int
+    type: ResourceType

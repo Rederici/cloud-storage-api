@@ -1,8 +1,9 @@
 from typing import Protocol
 
-from .types import UserSpacePath
+from .types import StoredResource, UserSpacePath
 
 
 class IStorageRepository(Protocol):
     async def create_directory(self, path: UserSpacePath) -> None: ...
+    async def list_directory(self, path: UserSpacePath) -> list[StoredResource]: ...
     async def exists(self, path: UserSpacePath) -> bool: ...
