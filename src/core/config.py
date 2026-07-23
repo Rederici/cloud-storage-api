@@ -20,7 +20,7 @@ class PostgresConfig(BaseModel):
     password: str = Field(default="postgres", alias="pass")
 
     def get_dsn(self, sync: bool = False) -> str:
-        engine = "psycopg2" if sync else "asyncpg"
+        engine = "psycopg" if sync else "asyncpg"
         return f"postgresql+{engine}://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
