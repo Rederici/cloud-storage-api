@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
 from redis.asyncio import Redis
-
 from src.auth.schemas import TokenPayload
 
 
@@ -15,14 +14,14 @@ class SessionRepository:
 
     async def create(self, user_id: int, token: str, ttl: timedelta | int) -> None:
         created_at = datetime.now(UTC)
-        await self._redis.setex(
+        await self._redis.set(
             self.get_session_key(token),
-            ttl,
             TokenPayload(
                 user_id=user_id,
                 created_at=created_at,
-                last_access=created_at
-            ).model_dump_json()
+                last_access=created_at,
+            ).model_dump_json(),
+            ex=ttl,
         )
 
     async def get(self, token: str) -> TokenPayload | None:
@@ -37,10 +36,10 @@ class SessionRepository:
             return None
 
         payload.last_access = datetime.now(UTC)
-        await self._redis.setex(
+        await self._redis.set(
             self.get_session_key(token),
-            ttl,
-            payload.model_dump_json()
+            payload.model_dump_json(),
+            ex=ttl,
         )
         return payload
 
