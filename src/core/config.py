@@ -11,7 +11,11 @@ from pydantic_settings import (
 
 
 class PostgresConfig(BaseModel):
-    model_config = ConfigDict(validate_by_alias=True, validate_by_name=True, populate_by_name=True)
+    model_config = ConfigDict(
+        validate_by_alias=True,
+        validate_by_name=True,
+        populate_by_name=True,
+    )
 
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
@@ -74,9 +78,9 @@ class Config(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ):
         return (
-            PyprojectTomlConfigSettingsSource(settings_cls),
-            env_settings,
             init_settings,
+            env_settings,
             dotenv_settings,
+            PyprojectTomlConfigSettingsSource(settings_cls),
             file_secret_settings,
         )
