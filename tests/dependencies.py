@@ -4,13 +4,17 @@ from collections.abc import AsyncGenerator, Generator
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from dishka import Scope, provide
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+)
+from src.core import Config, InfrastructureProvider
+from src.core.config import Env, MinioConfig, PostgresConfig, RedisConfig
 from testcontainers.minio import MinioContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
-
-from src.core import Config, InfrastructureProvider
-from src.core.config import Env, MinioConfig, PostgresConfig, RedisConfig
 
 
 class TestInfrastructureProvider(InfrastructureProvider):
@@ -31,7 +35,10 @@ class TestInfrastructureProvider(InfrastructureProvider):
 
     @provide(scope=Scope.APP, override=True)
     def config(
-        self, postgres_container: PostgresContainer, redis_container: RedisContainer, minio_container: MinioContainer
+        self,
+        postgres_container: PostgresContainer,
+        redis_container: RedisContainer,
+        minio_container: MinioContainer,
     ) -> Config:
         config = Config(
             postgres=PostgresConfig(
@@ -49,7 +56,9 @@ class TestInfrastructureProvider(InfrastructureProvider):
             minio=MinioConfig(
                 host=minio_container.get_container_host_ip(),
                 port=minio_container.get_exposed_port(9000),
-                bucket="TestBucket",
+                access_key_id=minio_container.access_key,
+                secret_access_key=minio_container.secret_key,
+                bucket="test-bucket",
                 ssl=False,
             ),
             env=Env.DEV,
