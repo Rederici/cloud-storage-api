@@ -7,16 +7,14 @@ from asgi_lifespan import LifespanManager
 from dishka import AsyncContainer, Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-
 from src.auth.schemas import CredentialsRequest
-from src.core import InfrastructureProvider
 from src.main import create_app, create_container
 from tests.dependencies import TestInfrastructureProvider
 
 
 @pytest_asyncio.fixture(scope="session")
 async def di_container() -> AsyncGenerator[AsyncContainer]:
-    container = create_container(InfrastructureProvider())
+    container = create_container(TestInfrastructureProvider())
     yield container
     await container.close()
 
@@ -35,10 +33,10 @@ async def app(test_container: AsyncContainer) -> FastAPI:
 @pytest_asyncio.fixture
 async def client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
     async with (
-        LifespanManager(app) as manager,
+        LifespanManager(app),
         AsyncClient(
             transport=ASGITransport(
-                app=manager.app,
+                app=app,
                 raise_app_exceptions=True,
             ),
             base_url="http://test",
