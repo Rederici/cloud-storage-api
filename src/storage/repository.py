@@ -1,12 +1,21 @@
 from os import PathLike
+from typing import BinaryIO
 
 from botocore.exceptions import ClientError
+from src.storage.exceptions import (
+    ResourceAlreadyExists,
+    ResourceCreationConflict,
+    ResourceNotFound,
+    StorageError,
+)
+from src.storage.types import ResourceType, StoredResource, UserSpacePath
 from starlette import status
 from types_aiobotocore_s3.client import S3Client
-from types_aiobotocore_s3.type_defs import CommonPrefixTypeDef, ObjectTypeDef
-
-from src.storage.exceptions import ResourceAlreadyExists, ResourceCreationConflict, StorageError
-from src.storage.types import ResourceType, StoredResource, UserSpacePath
+from types_aiobotocore_s3.type_defs import (
+    CommonPrefixTypeDef,
+    HeadObjectOutputTypeDef,
+    ObjectTypeDef,
+)
 
 
 class StorageRepository:
@@ -14,23 +23,21 @@ class StorageRepository:
         self._bucket_name = bucket_name
         self._s3 = s3_client
 
-    @staticmethod
-    def _map_s3_object(item: ObjectTypeDef) -> StoredResource:
-        path = UserSpacePath.from_storage_key(item["Key"])
-        return StoredResource(
-            path=path.public_path,
-            size=item["Size"],
-            type=ResourceType.FILE,
-        )
+    async def get(self, path: UserSpacePath) -> StoredResource:
+        try:
+            return self._map_s3_head(
+                path=path,
+                item=await self._s3.head_object(
+                    Bucket=self._bucket_name,
+                    Key=path.storage_key,
+                ),
+            )
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
 
-    @staticmethod
-    def _map_s3_prefix(item: CommonPrefixTypeDef) -> StoredResource:
-        path = UserSpacePath.from_storage_key(item["Prefix"])
-        return StoredResource(
-            path=path.public_path,
-            size=0,
-            type=ResourceType.DIRECTORY,
-        )
+            if error_code == '404':
+                raise ResourceNotFound(resource=path.public_path) from None
+            raise
 
     async def create_directory(self, path: UserSpacePath) -> None:
         try:
@@ -52,25 +59,6 @@ class StorageRepository:
 
             raise StorageError() from None
 
-    async def exists(self, path: UserSpacePath) -> bool:
-        try:
-            await self._s3.head_object(
-                Bucket=self._bucket_name,
-                Key=path.storage_key,
-            )
-            return True
-        except ClientError as e:
-            return False
-
-    async def get(self, path: str) -> None:
-        try:
-            info = self._s3.head_object(
-                Bucket=self._bucket_name,
-                Key=path,
-            )
-        except ClientError:
-            return None
-
     async def list_directory(self, path: UserSpacePath) -> list[StoredResource]:
         items = await self._s3.list_objects_v2(
             Bucket=self._bucket_name,
@@ -82,6 +70,71 @@ class StorageRepository:
         dirs = [self._map_s3_prefix(dir) for dir in items.get("CommonPrefixes", [])]
         return files + dirs
 
-    async def get_content(self, path: PathLike): ...
+    async def exists(self, path: UserSpacePath) -> bool:
+        try:
+            await self.get(path)
+            return True
+        except ResourceNotFound:
+            return False
+        except ClientError:
+            raise
 
-    async def delete(self, path: PathLike) -> None: ...
+    async def upload_file(
+        self,
+        file: BinaryIO,
+        *,
+        path: UserSpacePath,
+        content_type: str | None = None,
+    ) -> None:
+        extra_args = {}
+
+        if content_type is not None:
+            extra_args["ContentType"] = content_type
+
+        try:
+            await self._s3.put_object(
+                Bucket=self._bucket_name,
+                Key=path.storage_key,
+                Body=file,
+                ContentType=content_type or "application/octet-stream",
+                IfNoneMatch="*",
+            )
+
+        except ClientError as error:
+            status_code = error.response.get("ResponseMetadata", {}).get(
+                "HTTPStatusCode"
+            )
+            error_code = error.response.get("Error", {}).get("Code")
+
+            if status_code == 412 or error_code == "PreconditionFailed":
+                raise ResourceAlreadyExists(resource=path.public_path) from error
+
+            raise
+
+    @staticmethod
+    def _map_s3_object(item: ObjectTypeDef) -> StoredResource:
+        path = UserSpacePath.from_storage_key(item["Key"])
+        return StoredResource(
+            path=path.public_path,
+            size=item["Size"],
+            type=ResourceType.FILE,
+        )
+
+    @staticmethod
+    def _map_s3_head(
+        path: UserSpacePath, item: HeadObjectOutputTypeDef
+    ) -> StoredResource:
+        return StoredResource(
+            path=path.public_path,
+            size=item["ContentLength"],
+            type=ResourceType.FILE,
+        )
+
+    @staticmethod
+    def _map_s3_prefix(item: CommonPrefixTypeDef) -> StoredResource:
+        path = UserSpacePath.from_storage_key(item["Prefix"])
+        return StoredResource(
+            path=path.public_path,
+            size=0,
+            type=ResourceType.DIRECTORY,
+        )

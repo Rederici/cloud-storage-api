@@ -15,9 +15,30 @@ class StorageService:
         if not await self._storage_repo.exists(root):
             await self._storage_repo.create_directory(root)
 
-    async def create_folder(self, user_id: int, path: ResourcePath) -> None:
-        user_path = UserSpacePath(value=str(path), user_id=user_id)
+    async def _ensure_parent_exists(
+        self,
+        path: ResourcePath,
+        *,
+        user_id: int,
+    ) -> UserSpacePath:
+        """Build a user-scoped path and ensure its parent directory exists.
 
+        Converts the public resource path into a path scoped to the specified
+        user's storage namespace. Before returning the resulting path, verifies
+        that its parent directory exists in storage.
+
+        Args:
+            user_id: ID of the user who owns the storage namespace.
+            path: Public path of the resource being accessed or created.
+
+        Returns:
+            The resource path scoped to the specified user's storage namespace.
+
+        Raises:
+            ParentDirectoryDoesNotExist: If the parent directory of the resource
+                does not exist in the user's storage namespace.
+        """
+        user_path = UserSpacePath(value=str(path), user_id=user_id)
         if not await self._storage_repo.exists(user_path.parent):
             raise ParentDirectoryDoesNotExist(resource=path)
 
@@ -26,7 +47,12 @@ class StorageService:
 
         await self._storage_repo.create_directory(user_path)
 
-    async def list_directory(self, user_id: int, path: ResourcePath) -> list[StoredResource]:
+    async def list_directory(
+        self,
+        path: ResourcePath,
+        *,
+        user_id: int,
+    ) -> list[StoredResource]:
         items = await self._storage_repo.list_directory(UserSpacePath(value=str(path), user_id=user_id))
         if not items:
             raise ParentDirectoryDoesNotExist(resource=path)
@@ -45,7 +71,7 @@ class StorageInitializer:
         try:
             await self._s3.create_bucket(Bucket=self._bucket_name)
         except ClientError as e:
-            if e.response["Error"]["Code"] not in (
+            if e.response.get("Error", {}).get("Code") not in (
                 "BucketAlreadyOwnedByYou",
                 "BucketAlreadyExists",
             ):

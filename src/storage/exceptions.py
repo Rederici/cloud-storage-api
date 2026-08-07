@@ -9,6 +9,16 @@ class StorageError(AppError):
     pass
 
 
+class ContentSizeExceeded(Exception):
+    status_code = status.HTTP_413_CONTENT_TOO_LARGE
+    message = "Body is too large"
+
+
+class TooManyFiles(AppError):
+    status_code = status.HTTP_413_CONTENT_TOO_LARGE
+    message = "Too many files"
+
+
 class ResourceCreationConflict(StorageError):
     status_code = status.HTTP_409_CONFLICT
     message = "Resource '{resource}' creation conflict"
@@ -23,5 +33,19 @@ class ParentDirectoryDoesNotExist(ResourceCreationConflict):
     message = "Parent directory '{resource}' does not exist"
 
 
+class ResourceNotFound(ResourceCreationConflict):
+    status_code = status.HTTP_404_NOT_FOUND
+    message = "Resource '{resource}' not found"
+
+
 class ResourceAlreadyExists(ResourceCreationConflict):
     message = "Resource '{resource}' already exists"
+
+
+class FileTooLarge(StorageError):
+    status_code = status.HTTP_413_CONTENT_TOO_LARGE
+    message = "File size is too large"
+
+
+class InvalidPath(StorageError):
+    status_code = status.HTTP_400_BAD_REQUEST

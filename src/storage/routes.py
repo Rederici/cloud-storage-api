@@ -1,17 +1,19 @@
 from typing import Annotated
 
-from dishka import FromDishka
+from dishka import FromDishka as Inject
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Query
-from starlette import status
-
+from fastapi import APIRouter, Query, UploadFile, status
 from src.auth.dependencies import CurrentUser
 from src.core.schemas import ErrorResponse
-from src.storage.schemas import DirectoryRequest
 
-from .schemas import DirectoryResponse, PathRequest, ResourceResponse, ResourcesResponse
+from .schemas import (
+    AnyPath,
+    DirectoryResponse,
+    DirPath,
+    FilePath,
+    ResourceResponse,
+)
 from .service import StorageService
-from .types import StoredResource
 
 resource_router = APIRouter(route_class=DishkaRoute)
 directory_router = APIRouter(route_class=DishkaRoute)
@@ -96,17 +98,18 @@ async def upload_resource() -> ResourcesResponse: ...
     "",
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"model": ResourcesResponse, "description": "Directory found"},
+        200: {"model": list[ResourceResponse], "description": "Directory found"},
         401: {"model": ErrorResponse, "description": "Unauthorized"},
         404: {"model": ErrorResponse, "description": "Directory not found"},
     },
 )
 async def list_directory(
     user: CurrentUser,
-    storage_service: FromDishka[StorageService],
-    query: Annotated[DirectoryRequest, Query()],
-) -> ResourcesResponse:
-    items = await storage_service.list_directory(user.id, query.path)
+    storage_service: Inject[StorageService],
+    *,
+    path: DirPath,
+) -> list[ResourceResponse]:
+    items = await storage_service.list_directory(path, user_id=user.id)
     return [ResourceResponse.from_domain(item) for item in items]
 
 
@@ -122,8 +125,9 @@ async def list_directory(
 )
 async def create_directory(
     user: CurrentUser,
-    storage_service: FromDishka[StorageService],
-    query: Annotated[DirectoryRequest, Query()],
+    storage_service: Inject[StorageService],
+    *,
+    path: DirPath,
 ) -> DirectoryResponse:
-    await storage_service.create_folder(user.id, query.path)
-    return DirectoryResponse(path=query.path.parent, name=query.path.name)
+    await storage_service.create_folder(path, user_id=user.id)
+    return DirectoryResponse(path=path.parent, name=path.name)

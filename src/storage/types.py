@@ -1,10 +1,9 @@
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, ClassVar, Self
-
-from pydantic import GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,14 +12,36 @@ class ResourcePath:
 
     separator: ClassVar[str] = "/"
 
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.value!r})"
+
+    def __truediv__(self, other: Any) -> Self:
+        if self.is_file:
+            raise ValueError("Children can only be added to a directory")
+
+        if isinstance(other, ResourcePath):
+            other_value = other.value.lstrip(self.separator)
+        elif isinstance(other, str):
+            other_value = other.lstrip(self.separator)
+        else:
+            raise NotImplementedError()
+
+        if not other_value:
+            return self
+
+        return self._spawn(f"{self.value}{other_value}")
+
     def __post_init__(self) -> None:
         self._validate(self.value)
 
     def _spawn(self, value: str) -> Self:
-        return type(self)(value=value)
+        return self.__class__(value=value)
 
     @classmethod
-    def _validate(cls, value) -> None:
+    def _validate(cls, value: Any) -> None:
         if not isinstance(value, str):
             raise TypeError("Path must be a string")
 
@@ -80,56 +101,6 @@ class ResourcePath:
 
         return self._spawn(f"{parent_value}{self.separator}")
 
-    def __truediv__(
-        self,
-        other: str | ResourcePath,
-    ) -> Self:
-        if self.is_file:
-            raise ValueError("Children can only be added to a directory")
-
-        if isinstance(other, ResourcePath):
-            other_value = other.value.lstrip(self.separator)
-        elif isinstance(other, str):
-            other_value = other.lstrip(self.separator)
-        else:
-            return NotImplemented
-
-        if not other_value:
-            return self
-
-        return self._spawn(f"{self.value}{other_value}")
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.value!r})"
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls,
-        source_type: Any,
-        handler: GetCoreSchemaHandler,
-    ) -> CoreSchema:
-        def validate(value: object) -> ResourcePath:
-            if isinstance(value, cls):
-                return value
-
-            if not isinstance(value, str):
-                raise ValueError("Resource path must be a string")
-
-            return cls(value)
-
-        return core_schema.no_info_plain_validator_function(
-            validate,
-            json_schema_input_schema=core_schema.str_schema(),
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                lambda value: value.value,
-                return_schema=core_schema.str_schema(),
-                when_used="always",
-            ),
-        )
-
 
 @dataclass(frozen=True, slots=True)
 class UserSpacePath(ResourcePath):
@@ -141,11 +112,14 @@ class UserSpacePath(ResourcePath):
         if self.user_id <= 0:
             raise ValueError("user_id must be greater than zero")
 
+    def _spawn(self, value: str) -> Self:
+        return self.__class__(
+            value=value,
+            user_id=self.user_id,
+        )
+
     @classmethod
     def from_storage_key(cls, storage_key: str) -> Self:
-        if not isinstance(storage_key, str):
-            raise TypeError("Storage key must be a string")
-
         m = re.fullmatch(
             rf"^user-(?P<user_id>[1-9]\d*)-files"
             rf"(?P<path>{re.escape(cls.separator)}.*)?$",
@@ -158,12 +132,6 @@ class UserSpacePath(ResourcePath):
         return cls(
             value=m["path"] or cls.separator,
             user_id=int(m["user_id"]),
-        )
-
-    def _spawn(self, value: str) -> Self:
-        return type(self)(
-            value=value,
-            user_id=self.user_id,
         )
 
     @property
