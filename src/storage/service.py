@@ -59,7 +59,18 @@ class StorageService:
 
         return [i for i in items if i.path != path]
 
-    async def get(self) -> bytes: ...
+    async def get(
+        self,
+        path: ResourcePath,
+        *,
+        user_id: int,
+    ) -> StoredResource:
+        return await self._storage_repo.get(
+            await self._ensure_parent_exists(
+                path,
+                user_id=user_id,
+            )
+        )
 
 
 class StorageInitializer:

@@ -1,14 +1,6 @@
-from os import PathLike
 from typing import BinaryIO
 
 from botocore.exceptions import ClientError
-from src.storage.exceptions import (
-    ResourceAlreadyExists,
-    ResourceCreationConflict,
-    ResourceNotFound,
-    StorageError,
-)
-from src.storage.types import ResourceType, StoredResource, UserSpacePath
 from starlette import status
 from types_aiobotocore_s3.client import S3Client
 from types_aiobotocore_s3.type_defs import (
@@ -16,6 +8,14 @@ from types_aiobotocore_s3.type_defs import (
     HeadObjectOutputTypeDef,
     ObjectTypeDef,
 )
+
+from src.storage.exceptions import (
+    ResourceAlreadyExists,
+    ResourceCreationConflict,
+    ResourceNotFound,
+    StorageError,
+)
+from src.storage.types import ResourceType, StoredResource, UserSpacePath
 
 
 class StorageRepository:

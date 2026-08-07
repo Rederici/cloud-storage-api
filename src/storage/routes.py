@@ -29,9 +29,13 @@ directory_router = APIRouter(route_class=DishkaRoute)
     },
 )
 async def get_resource(
-    query: Annotated[PathRequest, Query()],
-    storage_service: FromDishka[StorageService],
-) -> ResourceResponse: ...
+    user: CurrentUser,
+    storage_service: Inject[StorageService],
+    *,
+    path: AnyPath,
+) -> ResourceResponse:
+    item = await storage_service.get(path, user_id=user.id)
+    return ResourceResponse.from_domain(item)
 
 
 @resource_router.delete(
