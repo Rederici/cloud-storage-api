@@ -1,45 +1,9 @@
-from dataclasses import dataclass
-
 import pytest
 from fastapi import status
 from httpx import AsyncClient
 
 from src.auth.schemas import CredentialsRequest
-
-
-@dataclass(frozen=True, slots=True)
-class TestUpload:
-    filename: str
-    content: bytes
-    content_type: str = "application/octet-stream"
-
-    def as_multipart(self) -> tuple[str, tuple[str, bytes, str]]:
-        return (
-            "files",
-            (
-                self.filename,
-                self.content,
-                self.content_type,
-            ),
-        )
-
-
-async def upload_resources(
-    client: AsyncClient,
-    uploads: list[TestUpload],
-    *,
-    path: str | None = None,
-):
-    params = {}
-
-    if path is not None:
-        params["path"] = path
-
-    return await client.post(
-        "/api/v1/resources",
-        params=params,
-        files=[upload.as_multipart() for upload in uploads],
-    )
+from tests.storage.helpers import TestUpload, upload_resources
 
 
 @pytest.mark.asyncio
@@ -52,7 +16,6 @@ async def test_upload_file_to_root(
         content=b"file content",
         content_type="text/plain",
     )
-
     response = await upload_resources(client, [upload])
 
     assert response.status_code == status.HTTP_201_CREATED, response.json()

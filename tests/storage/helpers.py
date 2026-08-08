@@ -1,8 +1,25 @@
-from uuid import uuid4
+from dataclasses import dataclass
 
 from httpx import AsyncClient, Response
 
 DIRECTORY_URL = "/api/v1/directory"
+
+
+@dataclass(frozen=True, slots=True)
+class TestUpload:
+    filename: str
+    content: bytes
+    content_type: str = "application/octet-stream"
+
+    def as_multipart(self) -> tuple[str, tuple[str, bytes, str]]:
+        return (
+            "files",
+            (
+                self.filename,
+                self.content,
+                self.content_type,
+            ),
+        )
 
 
 async def create_directory(
@@ -12,5 +29,19 @@ async def create_directory(
     return await client.post(DIRECTORY_URL, params={"path": path})
 
 
-def unique_name(prefix: str = "directory") -> str:
-    return f"{prefix}-{uuid4().hex}"
+async def upload_resources(
+    client: AsyncClient,
+    uploads: list[TestUpload],
+    *,
+    path: str | None = None,
+) -> Response:
+    params = {}
+
+    if path is not None:
+        params["path"] = path
+
+    return await client.post(
+        "/api/v1/resources",
+        params=params,
+        files=[upload.as_multipart() for upload in uploads],
+    )

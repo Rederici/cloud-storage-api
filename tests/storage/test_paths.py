@@ -13,10 +13,10 @@ from src.storage.types import ResourcePath, UserSpacePath
         "/a/b/c/file.txt",
     ],
 )
-def test_resource_path_accepts_valid_paths(value: str) -> None:
-    path = ResourcePath(value)
-
-    assert str(path) == value
+def test_resource_path_accepts_valid_paths(
+    value: str,
+) -> None:
+    assert str(ResourcePath(value)) == value
 
 
 @pytest.mark.parametrize(
@@ -32,7 +32,9 @@ def test_resource_path_accepts_valid_paths(value: str) -> None:
         "/documents/../file.txt",
     ],
 )
-def test_resource_path_rejects_invalid_paths(value: str) -> None:
+def test_resource_path_rejects_invalid_paths(
+    value: str,
+) -> None:
     with pytest.raises(ValueError):
         ResourcePath(value)
 
@@ -84,9 +86,7 @@ def test_resource_path_returns_name(
     value: str,
     expected: str,
 ) -> None:
-    path = ResourcePath(value)
-
-    assert path.name == expected
+    assert ResourcePath(value).name == expected
 
 
 @pytest.mark.parametrize(
@@ -103,9 +103,7 @@ def test_resource_path_returns_parent(
     value: str,
     expected_parent: str,
 ) -> None:
-    path = ResourcePath(value)
-
-    assert str(path.parent) == expected_parent
+    assert str(ResourcePath(value).parent) == expected_parent
 
 
 @pytest.mark.parametrize(
@@ -122,28 +120,17 @@ def test_resource_path_joins_child(
     child: str,
     expected: str,
 ) -> None:
-    result = ResourcePath(base) / child
-
-    assert result == ResourcePath(expected)
+    assert ResourcePath(base) / child == ResourcePath(expected)
 
 
 def test_resource_path_joins_another_resource_path() -> None:
-    base = ResourcePath("/documents/")
-    child = ResourcePath("/reports/2026/")
-
-    result = base / child
-
+    result = ResourcePath("/documents/") / ResourcePath("/reports/2026/")
     assert result == ResourcePath("/documents/reports/2026/")
 
 
 def test_file_cannot_have_children() -> None:
-    path = ResourcePath("/documents/report.pdf")
-
-    with pytest.raises(
-        ValueError,
-        match="Children can only be added",
-    ):
-        path / "nested.txt"
+    with pytest.raises(ValueError, match="Children can only be added"):
+        ResourcePath("/documents/report.pdf") / "nested.txt"
 
 
 def test_equal_resource_paths_are_equal() -> None:
@@ -176,24 +163,16 @@ def test_user_space_path_returns_storage_key(
     expected: str,
 ) -> None:
     path = UserSpacePath(value=value, user_id=42)
-
     assert path.storage_key == expected
 
 
 def test_user_space_path_returns_public_path() -> None:
-    path = UserSpacePath(
-        value="/documents/report.pdf",
-        user_id=42,
-    )
-
+    path = UserSpacePath(value="/documents/report.pdf", user_id=42)
     assert path.public_path == ResourcePath("/documents/report.pdf")
 
 
 def test_user_space_root() -> None:
-    root = UserSpacePath(
-        value="/",
-        user_id=42,
-    )
+    root = UserSpacePath(value="/", user_id=42)
 
     assert root.is_root
     assert root.is_directory
@@ -201,12 +180,7 @@ def test_user_space_root() -> None:
 
 
 def test_user_space_parent_preserves_user_id() -> None:
-    path = UserSpacePath(
-        value="/documents/report.pdf",
-        user_id=42,
-    )
-
-    parent = path.parent
+    parent = UserSpacePath(value="/documents/report.pdf", user_id=42).parent
 
     assert isinstance(parent, UserSpacePath)
     assert parent.user_id == 42
@@ -215,12 +189,7 @@ def test_user_space_parent_preserves_user_id() -> None:
 
 
 def test_user_space_join_preserves_user_id() -> None:
-    directory = UserSpacePath(
-        value="/documents/",
-        user_id=42,
-    )
-
-    result = directory / "report.pdf"
+    result = UserSpacePath(value="/documents/", user_id=42) / "report.pdf"
 
     assert isinstance(result, UserSpacePath)
     assert result.user_id == 42
