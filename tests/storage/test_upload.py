@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import pytest
 from fastapi import status
 from httpx import AsyncClient
+
 from src.auth.schemas import CredentialsRequest
 
 

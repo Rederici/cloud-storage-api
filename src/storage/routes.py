@@ -1,17 +1,16 @@
-from typing import Annotated
 
 from dishka import FromDishka as Inject
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Query, UploadFile, status, File
+from fastapi import APIRouter, status
+
 from src.auth.dependencies import CurrentUser
 from src.core.schemas import ErrorResponse
-from .dependencies import VerifiedFiles
 
+from .dependencies import VerifiedFiles
 from .schemas import (
     AnyPath,
     DirectoryResponse,
     DirPath,
-    FilePath,
     ResourceResponse,
 )
 from .service import StorageService
@@ -85,7 +84,7 @@ async def move_resource() -> ResourceResponse: ...
         401: {"model": ErrorResponse, "description": "Unauthorized"},
     },
 )
-async def search_resource() -> ResourcesResponse: ...
+async def search_resource() -> list[ResourceResponse]: ...
 
 
 @resource_router.post(

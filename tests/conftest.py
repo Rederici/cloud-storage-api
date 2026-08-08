@@ -7,6 +7,7 @@ from asgi_lifespan import LifespanManager
 from dishka import AsyncContainer, Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+
 from src.auth.schemas import CredentialsRequest
 from src.main import create_app, create_container
 from tests.dependencies import TestInfrastructureProvider

@@ -10,11 +10,12 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
 )
-from src.core import Config, InfrastructureProvider
-from src.core.config import Env, MinioConfig, PostgresConfig, RedisConfig
 from testcontainers.minio import MinioContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
+
+from src.core import Config, InfrastructureProvider
+from src.core.config import Env, MinioConfig, PostgresConfig, RedisConfig
 
 
 class TestInfrastructureProvider(InfrastructureProvider):

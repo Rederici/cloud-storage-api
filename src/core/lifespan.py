@@ -1,10 +1,9 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from dishka import AsyncContainer, Scope
+from dishka import AsyncContainer
 from fastapi import FastAPI
 
-from src.storage import StorageService
 from src.storage.service import StorageInitializer
 
 

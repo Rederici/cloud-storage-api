@@ -3,9 +3,9 @@ from fastapi import UploadFile
 from types_aiobotocore_s3.client import S3Client
 
 from .exceptions import (
+    InvalidFileName,
     ParentDirectoryDoesNotExist,
     ResourceAlreadyExists,
-    InvalidFileName,
 )
 from .interface import IStorageRepository
 from .types import ResourcePath, StoredResource, UserSpacePath

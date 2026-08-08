@@ -1,5 +1,6 @@
-from src.core import AppError
 from starlette import status
+
+from src.core import AppError
 
 from .types import ResourcePath
 

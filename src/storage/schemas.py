@@ -11,6 +11,7 @@ from pydantic import (
     PlainSerializer,
     WithJsonSchema,
 )
+
 from src.storage.types import StoredResource
 
 from .types import ResourcePath, ResourceType

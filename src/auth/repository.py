@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from redis.asyncio import Redis
+
 from src.auth.schemas import TokenPayload
 
 
