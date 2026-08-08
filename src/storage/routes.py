@@ -2,9 +2,10 @@ from typing import Annotated
 
 from dishka import FromDishka as Inject
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Query, UploadFile, status
+from fastapi import APIRouter, Query, UploadFile, status, File
 from src.auth.dependencies import CurrentUser
 from src.core.schemas import ErrorResponse
+from .dependencies import VerifiedFiles
 
 from .schemas import (
     AnyPath,
@@ -14,6 +15,7 @@ from .schemas import (
     ResourceResponse,
 )
 from .service import StorageService
+from .types import ResourceType
 
 resource_router = APIRouter(route_class=DishkaRoute)
 directory_router = APIRouter(route_class=DishkaRoute)
@@ -90,12 +92,32 @@ async def search_resource() -> ResourcesResponse: ...
     "",
     status_code=status.HTTP_201_CREATED,
     responses={
-        201: {"description": "Resource created"},
+        201: {"model": list[ResourceResponse], "description": "Resource created"},
         401: {"model": ErrorResponse, "description": "Unauthorized"},
         409: {"model": ErrorResponse, "description": "Resource already exists"},
     },
 )
-async def upload_resource() -> ResourcesResponse: ...
+async def upload_resource(
+    user: CurrentUser,
+    storage_service: Inject[StorageService],
+    *,
+    path: DirPath,
+    files: VerifiedFiles
+) -> list[ResourceResponse]:
+    await storage_service.upload_files(files, path=path, user_id=user.id)
+
+    items = []
+    for file in files:
+        file_path = path / file.filename
+        items.append(
+            ResourceResponse(
+                path=str(file_path.parent),
+                name=file_path.name,
+                size=file.size | 0,
+                type=ResourceType.FILE,
+            )
+        )
+    return items
 
 
 @directory_router.get(

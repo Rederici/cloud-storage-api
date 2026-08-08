@@ -1,3 +1,4 @@
+from contextlib import suppress
 from typing import BinaryIO
 
 from botocore.exceptions import ClientError
@@ -39,7 +40,21 @@ class StorageRepository:
                 raise ResourceNotFound(resource=path.public_path) from None
             raise
 
-    async def create_directory(self, path: UserSpacePath) -> None:
+    async def _create_directory_recursively(self, path: UserSpacePath) -> None:
+        dirs = []
+        while not path.public_path.is_root:
+            dirs.append(path)
+            path = path.parent
+
+        for dir in dirs[::-1]:
+            with suppress(ResourceAlreadyExists, ResourceCreationConflict):
+                await self.create_directory(path=dir)
+
+    async def create_directory(self, path: UserSpacePath, *, parents: bool = False) -> None:
+        if parents:
+            await self._create_directory_recursively(path)
+            return
+
         try:
             await self._s3.put_object(
                 Bucket=self._bucket_name,

@@ -1,7 +1,12 @@
 from botocore.client import ClientError
+from fastapi import UploadFile
 from types_aiobotocore_s3.client import S3Client
 
-from .exceptions import ParentDirectoryDoesNotExist, ResourceAlreadyExists
+from .exceptions import (
+    ParentDirectoryDoesNotExist,
+    ResourceAlreadyExists,
+    InvalidFileName,
+)
 from .interface import IStorageRepository
 from .types import ResourcePath, StoredResource, UserSpacePath
 
@@ -41,6 +46,48 @@ class StorageService:
         user_path = UserSpacePath(value=str(path), user_id=user_id)
         if not await self._storage_repo.exists(user_path.parent):
             raise ParentDirectoryDoesNotExist(resource=path)
+        return user_path
+
+    async def upload_files(
+        self,
+        files: list[UploadFile],
+        *,
+        path: ResourcePath,
+        user_id: int,
+    ) -> None:
+        user_path = UserSpacePath(value=str(path), user_id=user_id)
+        if not await self._storage_repo.exists(user_path):
+            raise ParentDirectoryDoesNotExist(resource=path)
+
+        final_paths = [user_path / file.filename for file in files]
+        for p in final_paths:
+            if not p.is_file:
+                raise InvalidFileName(resource=p)
+
+        for file in final_paths:
+            if await self._storage_repo.exists(file):
+                raise ResourceAlreadyExists(resource=file.public_path)
+
+        created_dirs = set()
+        for p in final_paths:
+            if p not in created_dirs:
+                await self._storage_repo.create_directory(p.parent, parents=True)
+                created_dirs.add(p.parent)
+
+        for file in files:
+            await self._storage_repo.upload_file(
+                path=user_path / file.filename,
+                file=file.file,
+                content_type=file.content_type,
+            )
+
+    async def create_folder(
+        self,
+        path: ResourcePath,
+        *,
+        user_id: int,
+    ) -> None:
+        user_path = await self._ensure_parent_exists(path, user_id=user_id)
 
         if await self._storage_repo.exists(user_path):
             raise ResourceAlreadyExists(resource=path)

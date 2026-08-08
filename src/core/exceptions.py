@@ -11,9 +11,9 @@ class AppError(Exception):
 
     def __init__(
         self,
+        message: str | None = None,
         *,
         status_code: int | None = None,
-        message: str | None = None,
         **params: Any,
     ) -> None:
         self.status_code = status_code or self.__class__.status_code

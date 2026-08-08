@@ -28,6 +28,7 @@ dependencies = [
     "argon2-cffi (>=25.1.0,<26.0.0)",
     "aioboto3 (>=15.5.0,<16.0.0)",
     "types-aiobotocore[s3] (>=3.7.0,<4.0.0)",
+    "python-multipart (>=0.0.32,<0.0.33)",
 ]
 
 [dependency-groups]
@@ -78,15 +79,10 @@ indent-style = "space"
 
 [tool.pyright]
 pythonVersion = "3.14"
+executionEnvironments = [{ root = "." }]
 typeCheckingMode = "standard"
-include = [
-    "src/",
-    "tests/",
-]
-exclude = [
-    "**/__pycache__",
-    ".venv",
-]
+include = ["src/", "tests/"]
+exclude = ["**/__pycache__", ".venv"]
 venvPath = "."
 venv = ".venv"
 
@@ -101,13 +97,7 @@ asyncio_default_test_loop_scope = "session"
 
 [tool.coverage.run]
 source = ["src/"]
-omit = [
-    "tests/",
-    "src/migrations/"
-]
+omit = ["tests/", "src/migrations/"]
 
 [tool.coverage.report]
-omit = [
-    "tests/",
-    "src/migrations/"
-]
+omit = ["tests/", "src/migrations/"]

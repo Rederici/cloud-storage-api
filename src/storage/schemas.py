@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, UploadFile
 from pydantic import (
     AfterValidator,
     BaseModel,
@@ -121,3 +121,52 @@ class DirectoryResponse(BaseModel):
     path: ResourcePath
     name: str
     type: ResourceType = ResourceType.DIRECTORY
+
+
+def validate_upload_filename(
+    file: UploadFile,
+) -> UploadFile:
+    filename = file.filename
+
+    if not filename:
+        raise ValueError("Upload filename must not be empty")
+
+    if filename.startswith("/"):
+        raise ValueError("Upload filename must not be absolute path")
+
+    try:
+        path = ResourcePath(f"/{filename}")
+    except (TypeError, ValueError) as e:
+        raise ValueError(str(e)) from e
+
+    if path.is_directory:
+        raise ValueError("Upload filename must not be a directory")
+    return file
+
+
+def validate_unique_filenames(
+    files: list[ValidatedUploadFile],
+) -> list[UploadFile]:
+    filenames: set[str] = set()
+
+    for file in files:
+        assert file.filename is not None
+
+        if file.filename in filenames:
+            raise ValueError(f"Filename is duplicated: {file.filename!r}")
+
+        filenames.add(file.filename)
+
+    return files
+
+
+type ValidatedUploadFile = Annotated[
+    UploadFile,
+    AfterValidator(validate_upload_filename),
+]
+
+
+type ValidatedUploadFiles = Annotated[
+    list[UploadFile],
+    AfterValidator(validate_unique_filenames),
+]

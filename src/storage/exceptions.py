@@ -1,6 +1,5 @@
-from starlette import status
-
 from src.core import AppError
+from starlette import status
 
 from .types import ResourcePath
 
@@ -40,6 +39,11 @@ class ResourceNotFound(ResourceCreationConflict):
 
 class ResourceAlreadyExists(ResourceCreationConflict):
     message = "Resource '{resource}' already exists"
+
+
+class InvalidFileName(ResourceCreationConflict):
+    status_code = status.HTTP_400_BAD_REQUEST
+    message = "Invalid file name '{resource}'"
 
 
 class FileTooLarge(StorageError):
