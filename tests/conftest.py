@@ -49,7 +49,7 @@ async def client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 def user() -> CredentialsRequest:
     return CredentialsRequest(
         username=f"user_{secrets.token_hex(4)}",
-        password=f"{secrets.token_hex(6)}_@2{secrets.token_hex(6).upper()}",
+        password=f"{secrets.token_hex(6)}_@2Aa{secrets.token_hex(6).upper()}",
     )
 
 
