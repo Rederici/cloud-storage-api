@@ -100,11 +100,12 @@ class StorageService:
         *,
         user_id: int,
     ) -> list[StoredResource]:
-        items = await self._storage_repo.list_directory(UserSpacePath(value=str(path), user_id=user_id))
-        if not items:
-            raise ParentDirectoryDoesNotExist(resource=path)
-
-        return [i for i in items if i.path != path]
+        return [
+            i
+            async for i in await self._storage_repo.list_directory(
+                UserSpacePath(value=str(path), user_id=user_id)
+            )
+        ]
 
     async def get(
         self,

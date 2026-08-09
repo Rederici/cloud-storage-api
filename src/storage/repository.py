@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import suppress
 from typing import BinaryIO
 
@@ -7,10 +8,12 @@ from types_aiobotocore_s3.client import S3Client
 from types_aiobotocore_s3.type_defs import (
     CommonPrefixTypeDef,
     HeadObjectOutputTypeDef,
+    ListObjectsV2RequestPaginateTypeDef,
     ObjectTypeDef,
 )
 
 from src.storage.exceptions import (
+    ParentDirectoryDoesNotExist,
     ResourceAlreadyExists,
     ResourceCreationConflict,
     ResourceNotFound,
@@ -36,7 +39,7 @@ class StorageRepository:
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
 
-            if error_code == '404':
+            if error_code == "404":
                 raise ResourceNotFound(resource=path.public_path) from None
             raise
 
@@ -81,9 +84,40 @@ class StorageRepository:
             Delimiter="/",
         )
 
-        files = [self._map_s3_object(file) for file in items.get("Contents", [])]
-        dirs = [self._map_s3_prefix(dir) for dir in items.get("CommonPrefixes", [])]
-        return files + dirs
+    async def list_directory(self, path: UserSpacePath, *, first_level: bool = True) -> AsyncIterator[StoredResource]:
+        paginator = self._s3.get_paginator("list_objects_v2")
+
+        params: ListObjectsV2RequestPaginateTypeDef = {
+            "Bucket": self._bucket_name,
+            "Prefix": path.storage_key,
+            "PaginationConfig": {
+                "PageSize": 1000,
+            },
+        }
+
+        if first_level:
+            params["Delimiter"] = "/"
+
+        is_first_page = True
+        async for page in paginator.paginate(**params):
+            items = page.get("Contents", [])
+            if is_first_page and not items:
+                raise ParentDirectoryDoesNotExist(resource=path)
+
+            if is_first_page:
+                is_first_page = False
+
+            for prefix in page.get("CommonPrefixes", []):
+                yield self._map_s3_prefix(prefix)
+
+            for item in items:
+                if item["Key"] == path.storage_key:
+                    continue
+
+                yield self._map_s3_object(item)
+
+        if is_first_page:
+            raise ResourceNotFound(resource=path)
 
     async def exists(self, path: UserSpacePath) -> bool:
         try:
@@ -116,9 +150,7 @@ class StorageRepository:
             )
 
         except ClientError as error:
-            status_code = error.response.get("ResponseMetadata", {}).get(
-                "HTTPStatusCode"
-            )
+            status_code = error.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
             error_code = error.response.get("Error", {}).get("Code")
 
             if status_code == 412 or error_code == "PreconditionFailed":
@@ -136,9 +168,7 @@ class StorageRepository:
         )
 
     @staticmethod
-    def _map_s3_head(
-        path: UserSpacePath, item: HeadObjectOutputTypeDef
-    ) -> StoredResource:
+    def _map_s3_head(path: UserSpacePath, item: HeadObjectOutputTypeDef) -> StoredResource:
         return StoredResource(
             path=path.public_path,
             size=item["ContentLength"],
