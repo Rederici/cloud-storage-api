@@ -77,12 +77,31 @@ class StorageRepository:
 
             raise StorageError() from None
 
-    async def list_directory(self, path: UserSpacePath) -> list[StoredResource]:
-        items = await self._s3.list_objects_v2(
+    async def _delete_object(self, path: UserSpacePath) -> None:
+        await self._s3.delete_object(Bucket=self._bucket_name,Key=path.storage_key)
+
+    async def delete(self, path: UserSpacePath):
+        if not await self.exists(path):
+            raise ResourceNotFound(resource=path)
+
+        if path.is_directory:
+            await self._delete_recursive(path)
+
+        await self._s3.delete_object(
             Bucket=self._bucket_name,
-            Prefix=path.storage_key,
-            Delimiter="/",
+            Key=path.storage_key,
         )
+
+    async def _delete_recursive(self, path: UserSpacePath):
+        items = self.list_directory(path, first_level=False)
+
+        async for item in items:
+            await self._delete_object(
+                UserSpacePath(
+                    value=str(item.path),
+                    user_id=path.user_id,
+                )
+            )
 
     async def list_directory(self, path: UserSpacePath, *, first_level: bool = True) -> AsyncIterator[StoredResource]:
         paginator = self._s3.get_paginator("list_objects_v2")

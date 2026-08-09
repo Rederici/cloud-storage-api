@@ -81,6 +81,19 @@ class StorageService:
                 content_type=file.content_type,
             )
 
+    async def delete(
+        self,
+        path: ResourcePath,
+        *,
+        user_id: int,
+    ):
+        await self._storage_repo.delete(
+            UserSpacePath(
+                value=str(path),
+                user_id=user_id,
+            )
+        )
+
     async def create_folder(
         self,
         path: ResourcePath,

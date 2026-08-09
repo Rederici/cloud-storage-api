@@ -1,4 +1,3 @@
-
 from dishka import FromDishka as Inject
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, status
@@ -48,7 +47,13 @@ async def get_resource(
         404: {"model": ErrorResponse, "description": "Resource not found"},
     },
 )
-async def delete_resource() -> None: ...
+async def delete_resource(
+    user: CurrentUser,
+    storage_service: Inject[StorageService],
+    *,
+    path: AnyPath,
+) -> None:
+    await storage_service.delete(path, user_id=user.id)
 
 
 @resource_router.get(
@@ -101,7 +106,7 @@ async def upload_resource(
     storage_service: Inject[StorageService],
     *,
     path: DirPath,
-    files: VerifiedFiles
+    files: VerifiedFiles,
 ) -> list[ResourceResponse]:
     await storage_service.upload_files(files, path=path, user_id=user.id)
 

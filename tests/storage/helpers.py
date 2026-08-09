@@ -45,3 +45,13 @@ async def upload_resources(
         params=params,
         files=[upload.as_multipart() for upload in uploads],
     )
+
+async def delete_resource(
+    client: AsyncClient,
+    *,
+    path: str,
+):
+    return await client.delete(
+        "/api/v1/resources",
+        params={"path": path},
+    )
