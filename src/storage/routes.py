@@ -1,6 +1,7 @@
 from dishka import FromDishka as Inject
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, status
+from fastapi.responses import StreamingResponse
 
 from src.auth.dependencies import CurrentUser
 from src.core.schemas import ErrorResponse
@@ -65,7 +66,20 @@ async def delete_resource(
         404: {"model": ErrorResponse, "description": "Resource not found"},
     },
 )
-async def download_resource(): ...
+async def download_resource(
+    user: CurrentUser,
+    storage_service: Inject[StorageService],
+    *,
+    path: AnyPath,
+):
+    result = await storage_service.download(path, user_id=user.id)
+    return StreamingResponse(
+        result.content,
+        media_type=result.content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{result.filename}"',
+        },
+    )
 
 
 @resource_router.post(
@@ -117,7 +131,7 @@ async def upload_resource(
             ResourceResponse(
                 path=str(file_path.parent),
                 name=file_path.name,
-                size=file.size | 0,
+                size=file.size or 0,
                 type=ResourceType.FILE,
             )
         )

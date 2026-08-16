@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import AsyncIterable
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, ClassVar, Self
@@ -160,3 +161,10 @@ class StoredResource:
     path: ResourcePath
     size: int
     type: ResourceType
+
+
+@dataclass
+class DownloadResult:
+    filename: str
+    content_type: str
+    content: AsyncIterable[bytes]

@@ -1,5 +1,9 @@
+from datetime import datetime
+from stat import S_IFREG
+
 from botocore.client import ClientError
 from fastapi import UploadFile
+from stream_zip import ZIP_64, async_stream_zip
 from types_aiobotocore_s3.client import S3Client
 
 from .exceptions import (
@@ -8,7 +12,7 @@ from .exceptions import (
     ResourceAlreadyExists,
 )
 from .interface import IStorageRepository
-from .types import ResourcePath, StoredResource, UserSpacePath
+from .types import DownloadResult, ResourcePath, StoredResource, UserSpacePath
 
 
 class StorageService:
@@ -113,12 +117,7 @@ class StorageService:
         *,
         user_id: int,
     ) -> list[StoredResource]:
-        return [
-            i
-            async for i in await self._storage_repo.list_directory(
-                UserSpacePath(value=str(path), user_id=user_id)
-            )
-        ]
+        return [i async for i in self._storage_repo.list_directory(UserSpacePath(value=str(path), user_id=user_id))]
 
     async def get(
         self,
@@ -133,6 +132,36 @@ class StorageService:
             )
         )
 
+    async def download(self, path: ResourcePath, *, user_id: int) -> DownloadResult:
+        user_path = await self._ensure_parent_exists(path, user_id=user_id)
+
+        if user_path.is_file:
+            return DownloadResult(
+                filename=user_path.name,
+                content_type="application/octet-stream",
+                content=self._storage_repo.get_content(user_path),
+            )
+
+        return DownloadResult(
+            filename=f"{user_path.name}.zip",
+            content_type="application/zip",
+            content=async_stream_zip(self._stream_zip(user_path)),
+        )
+
+    async def _stream_zip(self, user_path: UserSpacePath):
+        async for item in self._storage_repo.list_directory(user_path, first_level=False):
+            yield (
+                str(item.path).removeprefix("/"),
+                datetime.now(),
+                S_IFREG | 0o600,
+                ZIP_64,
+                self._storage_repo.get_content(
+                    UserSpacePath(
+                        value=str(item.path),
+                        user_id=user_path.user_id,
+                    )
+                ),
+            )
 
 class StorageInitializer:
     def __init__(self, s3_client: S3Client, bucket_name: str):
