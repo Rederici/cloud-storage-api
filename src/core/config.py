@@ -50,6 +50,13 @@ class MinioConfig(BaseModel):
         return f"{'https' if self.ssl else 'http'}://{self.host}:{self.port}"
 
 
+class CorsConfig(BaseModel):
+    allow_origins: list[str] = Field(default_factory=lambda: ["http://127.0.0.1:5173", "http://localhost:5173"])
+    allow_credentials: bool = True
+    allow_methods: list[str] = Field(default_factory=lambda: ["*"])
+    allow_headers: list[str] = Field(default_factory=lambda: ["*"])
+
+
 class Env(StrEnum):
     PROD = "prod"
     DEV = "dev"
@@ -65,6 +72,7 @@ class Config(BaseSettings):
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
     minio: MinioConfig = Field(default_factory=MinioConfig)
+    cors: CorsConfig = Field(default_factory=CorsConfig)
     session_ttl: timedelta = Field(default=timedelta(days=7))
     env: Env = Field(default=Env.DEV)
 

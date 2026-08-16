@@ -18,9 +18,14 @@ target_metadata = Base.metadata
 app_config = Config()
 
 def get_url() -> str:
-    override_url = os.environ.get("ALEMBIC_DATABASE_URL")
+    override_url = config.attributes.get("sqlalchemy_url")
     if override_url:
-        return override_url
+        return str(override_url)
+
+    env_url = os.environ.get("ALEMBIC_DATABASE_URL")
+    if env_url:
+        return env_url
+
     return app_config.postgres.get_dsn(sync=True)
 
 config.set_main_option("sqlalchemy.url", get_url())
