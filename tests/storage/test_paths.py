@@ -130,7 +130,7 @@ def test_resource_path_joins_another_resource_path() -> None:
 
 def test_file_cannot_have_children() -> None:
     with pytest.raises(ValueError, match="Children can only be added"):
-        ResourcePath("/documents/report.pdf") / "nested.txt"
+        _ = ResourcePath("/documents/report.pdf") / "nested.txt"
 
 
 def test_equal_resource_paths_are_equal() -> None:

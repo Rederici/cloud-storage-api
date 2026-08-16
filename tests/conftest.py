@@ -47,9 +47,9 @@ def config(
         postgres=PostgresConfig(
             host=postgres_container.get_container_host_ip(),
             port=postgres_container.get_exposed_port(5432),
-            username=postgres_container.username,
-            password=postgres_container.password,
-            database=postgres_container.dbname,
+            username=postgres_container.username,  # pyright: ignore[reportCallIssue]
+            password=postgres_container.password,  # pyright: ignore[reportCallIssue]
+            database=postgres_container.dbname,  # pyright: ignore[reportCallIssue]
         ),
         redis=RedisConfig(
             host=redis_container.get_container_host_ip(),
