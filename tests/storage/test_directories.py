@@ -51,7 +51,6 @@ async def test_cannot_create_existing_directory(
 @pytest.mark.parametrize(
     "path",
     [
-        "directory/",
         "/directory",
         "directory",
         "/parent//child/",
@@ -63,7 +62,6 @@ async def test_cannot_create_existing_directory(
         "/parent/../child/",
     ],
     ids=[
-        "without-leading-slash",
         "without-trailing-slash",
         "without-slashes",
         "empty-middle-level",

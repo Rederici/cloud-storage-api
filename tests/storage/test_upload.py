@@ -353,13 +353,11 @@ async def test_upload_to_missing_parent_returns_not_found(
 @pytest.mark.parametrize(
     "path",
     [
-        "relative/",
         "/missing-trailing-slash",
         "/folder//nested/",
         "/folder/../nested/",
         "/folder/./nested/",
         r"/folder\other/",
-        "",
     ],
 )
 @pytest.mark.asyncio

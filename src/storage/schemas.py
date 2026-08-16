@@ -24,6 +24,9 @@ def parse_resource_path(value: object) -> ResourcePath:
     if not isinstance(value, str):
         raise ValueError("Resource path must be a string")
 
+    if not value.startswith("/"):
+        value = f"/{value}"
+
     return ResourcePath(value)
 
 

@@ -115,9 +115,6 @@ async def test_delete_missing_directory(
 @pytest.mark.parametrize(
     "path",
     [
-        "",
-        "relative-file.txt",
-        "relative-directory/",
         "/folder//file.txt",
         "/folder/../file.txt",
         "/folder/./file.txt",
