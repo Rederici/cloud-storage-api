@@ -107,7 +107,7 @@ class UserSpacePath(ResourcePath):
     user_id: int
 
     def __post_init__(self) -> None:
-        super().__post_init__()
+        super(UserSpacePath, self).__post_init__()
 
         if self.user_id <= 0:
             raise ValueError("user_id must be greater than zero")
