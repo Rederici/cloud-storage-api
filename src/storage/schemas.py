@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
 from fastapi import Depends, Query, UploadFile
 from pydantic import (
@@ -9,20 +9,28 @@ from pydantic import (
     BeforeValidator,
     Field,
     PlainSerializer,
+    ValidateAs,
     WithJsonSchema,
+    WrapValidator,
 )
+from pydantic_core.core_schema import ValidatorFunctionWrapHandler
 
 from src.storage.types import StoredResource
 
 from .types import ResourcePath, ResourceType
 
 
-def parse_resource_path(value: object) -> ResourcePath:
+def validate_resource_path(
+    value: Any,
+    handler: ValidatorFunctionWrapHandler,
+) -> ResourcePath:
     if isinstance(value, ResourcePath):
         return value
 
     if not isinstance(value, str):
         raise ValueError("Resource path must be a string")
+
+    value = value.strip()
 
     if not value.startswith("/"):
         value = f"/{value}"
@@ -30,23 +38,28 @@ def parse_resource_path(value: object) -> ResourcePath:
     return ResourcePath(value)
 
 
-def validate_file_path(path: ResourcePath) -> ResourcePath:
-    if path.is_directory:
-        raise ValueError("Path must point to a file")
+def validate_path_as(type: Literal["file", "directory", "any"] = "any"):
+    def validator(path: ResourcePath) -> ResourcePath:
+        if type == "any":
+            return path
 
-    return path
+        if path.is_file and type == "directory":
+            raise ValueError("Path must point to a directory")
+
+        if path.is_directory and type == "file":
+            raise ValueError("Path must point to a file")
+
+        return path
+
+    return validator
 
 
-def validate_directory_path(path: ResourcePath) -> ResourcePath:
-    if path.is_file:
-        raise ValueError("Path must point to a directory")
-
-    return path
-
-
-type _AnyPathValue = Annotated[
+type _AnyPath = Annotated[
     ResourcePath,
-    BeforeValidator(parse_resource_path),
+    WrapValidator(
+        validate_resource_path,
+        json_schema_input_type=str | None,
+    ),
     PlainSerializer(
         lambda path: path.value,
         return_type=str,
@@ -54,54 +67,19 @@ type _AnyPathValue = Annotated[
     WithJsonSchema({"type": "string"}),
 ]
 
-type _FilePathValue = Annotated[
-    _AnyPathValue,
-    AfterValidator(validate_file_path),
-]
-
-type _DirPathValue = Annotated[
-    _AnyPathValue,
-    AfterValidator(validate_directory_path),
-]
-
-
-class _AnyPathQuery(BaseModel):
-    path: _AnyPathValue = Field(default="/", validate_default=True)
-
-
-class _FilePathQuery(BaseModel):
-    path: _FilePathValue
-
-
-class _DirPathQuery(BaseModel):
-    path: _DirPathValue = Field(default="/", validate_default=True)
-
-
-def get_any_path(query: Annotated[_AnyPathQuery, Query()]) -> ResourcePath:
-    return query.path
-
-
-def get_file_path(query: Annotated[_FilePathQuery, Query()]) -> ResourcePath:
-    return query.path
-
-
-def get_dir_path(query: Annotated[_DirPathQuery, Query()]) -> ResourcePath:
-    return query.path
-
-
 type AnyPath = Annotated[
-    _AnyPathValue,
-    Depends(get_any_path),
+    _AnyPath,
+    AfterValidator(validate_path_as("any")),
 ]
 
 type FilePath = Annotated[
-    _FilePathValue,
-    Depends(get_file_path),
+    _AnyPath,
+    AfterValidator(validate_path_as("file")),
 ]
 
 type DirPath = Annotated[
-    _DirPathValue,
-    Depends(get_dir_path),
+    _AnyPath,
+    AfterValidator(validate_path_as("directory")),
 ]
 
 

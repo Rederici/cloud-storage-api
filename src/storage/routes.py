@@ -1,6 +1,8 @@
+from typing import Annotated
+
 from dishka import FromDishka as Inject
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 from fastapi.responses import StreamingResponse
 
 from src.auth.dependencies import CurrentUser
@@ -33,7 +35,7 @@ async def get_resource(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: AnyPath,
+    path: AnyPath = Query(default="/"),
 ) -> ResourceResponse:
     item = await storage_service.get(path, user_id=user.id)
     return ResourceResponse.from_domain(item)
@@ -52,7 +54,7 @@ async def delete_resource(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: AnyPath,
+    path: Annotated[AnyPath, Query()],
 ) -> None:
     await storage_service.delete(path, user_id=user.id)
 
@@ -70,7 +72,7 @@ async def download_resource(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: AnyPath,
+    path: Annotated[AnyPath, Query()],
 ):
     result = await storage_service.download(path, user_id=user.id)
     return StreamingResponse(
@@ -119,7 +121,7 @@ async def upload_resource(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: DirPath,
+    path: Annotated[DirPath, Query()],
     files: VerifiedFiles,
 ) -> list[ResourceResponse]:
     await storage_service.upload_files(files, path=path, user_id=user.id)
@@ -151,7 +153,7 @@ async def list_directory(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: DirPath,
+    path: DirPath = Query(default="/"),
 ) -> list[ResourceResponse]:
     items = await storage_service.list_directory(path, user_id=user.id)
     return [ResourceResponse.from_domain(item) for item in items]
@@ -171,7 +173,7 @@ async def create_directory(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: DirPath,
+    path: Annotated[DirPath, Query()],
 ) -> DirectoryResponse:
     await storage_service.create_folder(path, user_id=user.id)
     return DirectoryResponse(path=path.parent, name=path.name)
