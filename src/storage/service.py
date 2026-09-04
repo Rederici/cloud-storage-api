@@ -163,6 +163,17 @@ class StorageService:
                 ),
             )
 
+    async def move(self, source: ResourcePath, destination: ResourcePath, *, user_id: int) -> None:
+        user_source = await self._ensure_parent_exists(source, user_id=user_id)
+        user_dest = await self._ensure_parent_exists(destination, user_id=user_id)
+
+        if user_source.is_file:
+            await self._storage_repo.rename(user_source, user_dest)
+            return
+
+    async def search(self, query: str, *, user_id: int) -> list[StoredResource]:
+        ...
+
 class StorageInitializer:
     def __init__(self, s3_client: S3Client, bucket_name: str):
         self._s3 = s3_client

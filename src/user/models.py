@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.core.models import Base, IdMixin
+from persistance.sqlalchemy.models import Base, IdMixin
 
 
 class User(IdMixin, Base):

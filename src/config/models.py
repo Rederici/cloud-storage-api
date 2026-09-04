@@ -1,7 +1,7 @@
 from datetime import timedelta
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -19,9 +19,9 @@ class PostgresConfig(BaseModel):
 
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
-    database: str = Field(default="postgres", alias="name")
-    username: str = Field(default="postgres", alias="user")
-    password: str = Field(default="postgres", alias="pass")
+    database: str = Field(default="postgres", validation_alias=AliasChoices("name", "database"))
+    username: str = Field(default="postgres", validation_alias=AliasChoices("user", "username"))
+    password: str = Field(default="postgres", validation_alias=AliasChoices("pass", "password"))
 
     def get_dsn(self, sync: bool = False) -> str:
         engine = "psycopg" if sync else "asyncpg"

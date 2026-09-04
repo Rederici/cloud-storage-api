@@ -5,9 +5,9 @@ from dishka.integrations.fastapi import inject
 from fastapi import Depends
 from redis.asyncio import Redis
 
-from src.core import Config
-from src.core.security import security
-from src.storage.service import StorageService
+from security import security
+from src.config import Config
+from src.storage import StorageService
 from src.user import UserService
 from src.user.models import User
 

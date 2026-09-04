@@ -5,8 +5,8 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Query, status
 from fastapi.responses import StreamingResponse
 
+from src.api.http.schemas import ErrorResponse
 from src.auth.dependencies import CurrentUser
-from src.core.schemas import ErrorResponse
 
 from .dependencies import VerifiedFiles
 from .schemas import (
@@ -18,11 +18,11 @@ from .schemas import (
 from .service import StorageService
 from .types import ResourceType
 
-resource_router = APIRouter(route_class=DishkaRoute)
-directory_router = APIRouter(route_class=DishkaRoute)
+ResourceRouter = APIRouter(route_class=DishkaRoute, prefix="/resources", tags=["Resources"])
+DirectoryRouter = APIRouter(route_class=DishkaRoute, prefix="/directory", tags=["Directory"])
 
 
-@resource_router.get(
+@ResourceRouter.get(
     "",
     status_code=status.HTTP_200_OK,
     responses={
@@ -41,7 +41,7 @@ async def get_resource(
     return ResourceResponse.from_domain(item)
 
 
-@resource_router.delete(
+@ResourceRouter.delete(
     "",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
@@ -59,7 +59,7 @@ async def delete_resource(
     await storage_service.delete(path, user_id=user.id)
 
 
-@resource_router.get(
+@ResourceRouter.get(
     "/download",
     status_code=status.HTTP_200_OK,
     responses={
@@ -84,7 +84,7 @@ async def download_resource(
     )
 
 
-@resource_router.post(
+@ResourceRouter.post(
     "/move",
     status_code=status.HTTP_200_OK,
     responses={
@@ -94,10 +94,20 @@ async def download_resource(
         409: {"model": ErrorResponse, "description": "Resource already exists at the destination"},
     },
 )
-async def move_resource() -> ResourceResponse: ...
+async def move_resource(
+    user: CurrentUser,
+    storage_service: Inject[StorageService],
+    *,
+    source: Annotated[AnyPath, Query(alias="from")],
+    dest: Annotated[AnyPath, Query(alias="to")],
+) -> None:
+    if source.is_file != dest.is_file:
+        raise ValueError("")
+
+    await storage_service.move(source, dest, user_id=user.id)
 
 
-@resource_router.get(
+@ResourceRouter.get(
     "/search",
     status_code=status.HTTP_200_OK,
     responses={
@@ -105,10 +115,17 @@ async def move_resource() -> ResourceResponse: ...
         401: {"model": ErrorResponse, "description": "Unauthorized"},
     },
 )
-async def search_resource() -> list[ResourceResponse]: ...
+async def search_resource(
+    user: CurrentUser,
+    storage_service: Inject[StorageService],
+    *,
+    query: str,
+) -> list[ResourceResponse]:
+    ...
+    # items = await storage_service.search(query, user_id=user.id)
 
 
-@resource_router.post(
+@ResourceRouter.post(
     "",
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -140,7 +157,7 @@ async def upload_resource(
     return items
 
 
-@directory_router.get(
+@DirectoryRouter.get(
     "",
     status_code=status.HTTP_200_OK,
     responses={
@@ -153,13 +170,13 @@ async def list_directory(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    path: DirPath = Query(default="/"),
+    path: DirPath = Query(default=""),
 ) -> list[ResourceResponse]:
     items = await storage_service.list_directory(path, user_id=user.id)
     return [ResourceResponse.from_domain(item) for item in items]
 
 
-@directory_router.post(
+@DirectoryRouter.post(
     "",
     status_code=status.HTTP_201_CREATED,
     responses={

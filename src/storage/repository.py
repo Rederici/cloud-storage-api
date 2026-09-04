@@ -112,6 +112,13 @@ class StorageRepository:
         while chunk := await body.read(CHUNK_SIZE):
             yield chunk
 
+    async def rename(self, source: UserSpacePath, destination: UserSpacePath) -> None:
+        await self._s3.rename_object(
+            Bucket=self._bucket_name,
+            RenameSource=source.storage_key,
+            Key=destination.storage_key,
+        )
+
     async def list_directory(self, path: UserSpacePath, *, first_level: bool = True) -> AsyncIterator[StoredResource]:
         paginator = self._s3.get_paginator("list_objects_v2")
 

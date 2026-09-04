@@ -7,15 +7,15 @@ from fastapi.security import APIKeyCookie
 from starlette import status
 from starlette.responses import Response
 
+from api.http.schemas import ErrorResponse
+from config.models import Env
 from src.auth.constants import SESSION_COOKIE_NAME
 from src.auth.schemas import CredentialsRequest
 from src.auth.service import AuthService
-from src.core import Config
-from src.core.config import Env
-from src.core.schemas import ErrorResponse
+from src.config import Config
 from src.user.schemas import UserResponse
 
-router = APIRouter(route_class=DishkaRoute)
+router = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
 
 
 def set_token(response: Response, config: Config, token: str):
@@ -24,46 +24,54 @@ def set_token(response: Response, config: Config, token: str):
         value=token,
         httponly=True,
         secure=config.env == Env.PROD,
-        max_age=int(config.session_ttl.total_seconds())
+        max_age=int(config.session_ttl.total_seconds()),
     )
 
 
-@router.post("/sign-up", status_code=status.HTTP_201_CREATED, responses={
-    201: {"model": UserResponse, "description": "User registration successful"},
-    409: {"model": ErrorResponse, "description": "User already exists"}
-})
+@router.post(
+    "/sign-up",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"model": UserResponse, "description": "User registration successful"},
+        409: {"model": ErrorResponse, "description": "User already exists"},
+    },
+)
 async def sign_up(
-        config: FromDishka[Config],
-        auth_service: FromDishka[AuthService],
-        credentials: CredentialsRequest,
-        response: Response,
+    config: FromDishka[Config],
+    auth_service: FromDishka[AuthService],
+    credentials: CredentialsRequest,
+    response: Response,
 ) -> UserResponse:
     authorized = await auth_service.register(credentials.username, credentials.password)
     set_token(response, config, authorized.token)
     return UserResponse(username=authorized.username)
 
 
-@router.post("/sign-in", status_code=status.HTTP_200_OK, responses={
-    200: {"model": UserResponse, "description": "User logged in successful"},
-    401: {"model": ErrorResponse, "description": "Invalid credentials"},
-})
+@router.post(
+    "/sign-in",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"model": UserResponse, "description": "User logged in successful"},
+        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+    },
+)
 async def sign_in(
-        config: FromDishka[Config],
-        auth_service: FromDishka[AuthService],
-        credentials: CredentialsRequest,
-        response: Response,
+    config: FromDishka[Config],
+    auth_service: FromDishka[AuthService],
+    credentials: CredentialsRequest,
+    response: Response,
 ) -> UserResponse:
     authorized = await auth_service.login(credentials.username, credentials.password)
     set_token(response, config, authorized.token)
     return UserResponse(username=authorized.username)
 
 
-@router.post("/sign-out", status_code=status.HTTP_204_NO_CONTENT, responses={
-    204: {"description": "User logout successful"}
-})
+@router.post(
+    "/sign-out", status_code=status.HTTP_204_NO_CONTENT, responses={204: {"description": "User logout successful"}}
+)
 async def sign_out(
-        auth_service: FromDishka[AuthService],
-        credentials: Annotated[str, Depends(APIKeyCookie(name="sessionId", auto_error=False))],
+    auth_service: FromDishka[AuthService],
+    credentials: Annotated[str, Depends(APIKeyCookie(name="sessionId", auto_error=False))],
 ):
     if credentials is not None:
         await auth_service.logout(credentials)

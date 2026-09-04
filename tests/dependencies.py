@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-from dishka import Scope, provide
+from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncEngine,
@@ -8,11 +8,9 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 
-from src.core import InfrastructureProvider
 
-
-class TestInfrastructureProvider(InfrastructureProvider):
-    @provide(scope=Scope.SESSION)
+class TestPostgresProvider(Provider):
+    @provide(scope=Scope.SESSION, override=True)
     async def async_connection(self, engine: AsyncEngine) -> AsyncGenerator[AsyncConnection]:
         async with engine.connect() as connection:
             trans = await connection.begin()

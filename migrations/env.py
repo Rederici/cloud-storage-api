@@ -1,10 +1,10 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from src.core import Base, Config
+from src.config import Config
+from src.persistance.sqlalchemy.models import Base
 from src.user.models import User
 
 assert Base and User
@@ -17,18 +17,9 @@ target_metadata = Base.metadata
 
 app_config = Config()
 
-def get_url() -> str:
-    override_url = config.attributes.get("sqlalchemy_url")
-    if override_url:
-        return str(override_url)
+if config.get_main_option("sqlalchemy.url") is None:
+    config.set_main_option("sqlalchemy.url", app_config.postgres.get_dsn(sync=True))
 
-    env_url = os.environ.get("ALEMBIC_DATABASE_URL")
-    if env_url:
-        return env_url
-
-    return app_config.postgres.get_dsn(sync=True)
-
-config.set_main_option("sqlalchemy.url", get_url())
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -68,9 +59,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

@@ -1,10 +1,10 @@
 from starlette import status
 
-from src.core import AppError
+from src.exceptions import AppError
 
 
 class AuthError(AppError):
-    status_code = status.HTTP_401_UNAUTHORIZED
+    pass
 
 
 class InvalidTokenError(AuthError):

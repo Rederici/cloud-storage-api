@@ -6,17 +6,18 @@ import pytest_asyncio
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from asgi_lifespan import LifespanManager
-from dishka import AsyncContainer, Scope
+from dishka import Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine
 from testcontainers.minio import MinioContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
+from src.app.bootstrap import Bootstrap
 from src.auth.schemas import CredentialsRequest
-from src.bootstrap import create_app, create_container
-from src.core.config import Config, Env, MinioConfig, PostgresConfig, RedisConfig
-from tests.dependencies import TestInfrastructureProvider
+from src.config.models import Config, Env, MinioConfig, PostgresConfig, RedisConfig
+from tests.dependencies import TestPostgresProvider
 
 
 @pytest.fixture(scope="session")
@@ -47,9 +48,9 @@ def config(
         postgres=PostgresConfig(
             host=postgres_container.get_container_host_ip(),
             port=postgres_container.get_exposed_port(5432),
-            username=postgres_container.username,  # pyright: ignore[reportCallIssue]
-            password=postgres_container.password,  # pyright: ignore[reportCallIssue]
-            database=postgres_container.dbname,  # pyright: ignore[reportCallIssue]
+            username=postgres_container.username,
+            password=postgres_container.password,
+            database=postgres_container.dbname,
         ),
         redis=RedisConfig(
             host=redis_container.get_container_host_ip(),
@@ -71,27 +72,21 @@ def config(
 @pytest.fixture(scope="session", autouse=True)
 def apply_migrations(config: Config) -> None:
     alembic_cfg = AlembicConfig("alembic.ini")
-    alembic_cfg.attributes["sqlalchemy_url"] = config.postgres.get_dsn(sync=True)
+    alembic_cfg.set_main_option("sqlalchemy.url", config.postgres.get_dsn(sync=True))
     command.upgrade(alembic_cfg, "head")
 
 
 @pytest_asyncio.fixture(scope="session")
-async def di_container(config: Config) -> AsyncGenerator[AsyncContainer]:
-    container = create_container(
-        TestInfrastructureProvider(),
-        context={Config: config},
-    )
-    yield container
-    await container.close()
+async def bootstrap(config: Config) -> AsyncGenerator[Bootstrap]:
+    bootstrap = Bootstrap(TestPostgresProvider(), config=config)
+    yield bootstrap
+    await bootstrap.container.close()
 
 
 @pytest_asyncio.fixture
-async def app(config: Config, di_container: AsyncContainer) -> AsyncGenerator[FastAPI]:
-    async with di_container(scope=Scope.SESSION) as session_container:
-        yield create_app(
-            container=session_container,
-            config=config,
-        )
+async def app(bootstrap: Bootstrap) -> AsyncGenerator[FastAPI]:
+    async with bootstrap.container(scope=Scope.SESSION) as session_container:
+        yield bootstrap.create_app(container=session_container)
 
 
 @pytest_asyncio.fixture
@@ -103,7 +98,7 @@ async def client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
                 app=app,
                 raise_app_exceptions=True,
             ),
-            base_url="http://test",
+            base_url="http://x.test",
         ) as client,
     ):
         yield client
