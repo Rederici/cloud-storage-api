@@ -2,7 +2,7 @@ from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
 from starlette import status
 
-from api.http.schemas import ErrorResponse
+from src.api.http.schemas import ErrorResponse
 from src.auth.dependencies import CurrentUser
 from src.user.schemas import UserResponse
 

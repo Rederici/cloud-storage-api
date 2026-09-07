@@ -10,7 +10,7 @@ from src.auth import AuthProvider, AuthRouter
 from src.config import Config, ConfigProvider
 from src.config.models import Env
 from src.exceptions import AppError
-from src.persistance import SQLAlchemyProvider, RedisProvider, BotoProvider
+from src.persistance import BotoProvider, RedisProvider, SQLAlchemyProvider
 from src.storage import StorageProvider
 from src.storage.routes import DirectoryRouter, ResourceRouter
 from src.user import UserProvider

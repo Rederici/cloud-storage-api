@@ -1,7 +1,7 @@
 import secrets
 
-from security import DUMMY_HASH, verify_password
 from src.config import Config
+from src.security import DUMMY_HASH, verify_password
 from src.storage import StorageService
 from src.user.service import UserService
 

@@ -7,12 +7,12 @@ from fastapi.security import APIKeyCookie
 from starlette import status
 from starlette.responses import Response
 
-from api.http.schemas import ErrorResponse
-from config.models import Env
+from src.api.http.schemas import ErrorResponse
 from src.auth.constants import SESSION_COOKIE_NAME
 from src.auth.schemas import CredentialsRequest
 from src.auth.service import AuthService
 from src.config import Config
+from src.config.models import Env
 from src.user.schemas import UserResponse
 
 router = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])

@@ -1,4 +1,4 @@
-from security import hash_password
+from src.security import hash_password
 
 from .exceptions import UserAlreadyExists, UserNotFound
 from .interface import IUserRepository

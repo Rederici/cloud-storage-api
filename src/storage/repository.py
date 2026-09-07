@@ -71,10 +71,10 @@ class StorageRepository:
             error_code = e.response.get("Error", {}).get("Code")
 
             if status_code == status.HTTP_412_PRECONDITION_FAILED or error_code == "PreconditionFailed":
-                raise ResourceAlreadyExists(path) from None
+                raise ResourceAlreadyExists(str(path)) from None
 
             if status_code == status.HTTP_409_CONFLICT or error_code == "ConditionalRequestConflict":
-                raise ResourceCreationConflict(path) from None
+                raise ResourceCreationConflict(str(path)) from None
 
             raise StorageError() from None
 

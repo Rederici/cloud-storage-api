@@ -1,8 +1,5 @@
-from starlette import status
 
 from src.exceptions import AppError
-
-from .types import ResourcePath
 
 
 class StorageError(AppError):
