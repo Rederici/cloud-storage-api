@@ -41,10 +41,7 @@ async def test_upload_file_to_existing_directory(
         content_type="text/plain",
     )
 
-    seed_response = await upload_resources(
-        client,
-        [seed],
-    )
+    seed_response = await upload_resources(client, [seed], path="/")
 
     assert seed_response.status_code == status.HTTP_201_CREATED
 
@@ -307,9 +304,7 @@ async def test_upload_is_atomic_when_file_exists(
     assert initial_response.status_code == status.HTTP_201_CREATED
 
     new_file = TestUpload(filename="new.txt", content=b"new content")
-    conflicting_file = TestUpload(
-        filename="existing.txt", content=b"replacement content"
-    )
+    conflicting_file = TestUpload(filename="existing.txt", content=b"replacement content")
 
     conflict_response = await upload_resources(client, [new_file, conflicting_file])
     assert conflict_response.status_code == status.HTTP_409_CONFLICT
@@ -337,7 +332,7 @@ async def test_upload_duplicate_filenames_returns_conflict(
     ]
 
     response = await upload_resources(client, uploads)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -368,7 +363,7 @@ async def test_upload_with_invalid_parent_path_returns_unprocessable_entity(
 ) -> None:
     upload = TestUpload(filename="file.txt", content=b"content")
     response = await upload_resources(client, [upload], path=path)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == 400
 
 
 @pytest.mark.parametrize(
@@ -391,7 +386,7 @@ async def test_upload_with_invalid_filename_returns_unprocessable_entity(
 ) -> None:
     upload = TestUpload(filename=filename, content=b"content")
     response = await upload_resources(client, [upload])
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -400,7 +395,7 @@ async def test_upload_without_files_returns_unprocessable_entity(
     registered_user: CredentialsRequest,
 ) -> None:
     response = await client.post("/api/v1/resources")
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -422,7 +417,7 @@ async def test_upload_with_wrong_multipart_field_returns_unprocessable_entity(
         ],
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio

@@ -79,4 +79,4 @@ async def test_reject_invalid_directory_path(
     path: str,
 ) -> None:
     response = await create_directory(client, path)
-    assert response.status_code == 422
+    assert response.status_code == 400

@@ -33,7 +33,7 @@ async def upload_resources(
     client: AsyncClient,
     uploads: list[TestUpload],
     *,
-    path: str | None = None,
+    path: str = "/",
 ) -> Response:
     params = {}
 
@@ -45,6 +45,7 @@ async def upload_resources(
         params=params,
         files=[upload.as_multipart() for upload in uploads],
     )
+
 
 async def delete_resource(
     client: AsyncClient,

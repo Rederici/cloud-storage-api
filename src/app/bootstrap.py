@@ -1,11 +1,15 @@
 from functools import cached_property
+from typing import Any
 
 from dishka import AsyncContainer, Provider, make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import APIRouter, FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException
 
 from src.api.http import ErrorResponse, error_handler
+from src.api.http.exception_handler import base_error_handler, validation_error_handler
 from src.auth import AuthProvider, AuthRouter
 from src.config import Config, ConfigProvider
 from src.config.models import Env
@@ -35,7 +39,8 @@ class Bootstrap:
     @property
     def config(self) -> Config:
         if self._config is None:
-            self._config = Config()
+            self._config = (cfg := Config())
+            return cfg
         return self._config
 
     @property
@@ -80,8 +85,11 @@ class Bootstrap:
             debug=self.config.env != Env.PROD,
             exception_handlers={
                 AppError: error_handler,
+                RequestValidationError: validation_error_handler,
+                HTTPException: base_error_handler,
             },
             responses={
+                400: {"model": ErrorResponse, "description": "Bad Request"},
                 500: {"model": ErrorResponse, "description": "Internal Server Error"},
             },
         )
@@ -99,4 +107,19 @@ class Bootstrap:
             api.include_router(router)
 
         app.include_router(api, prefix="/api/v1")
+
+        app.openapi_schema = self._custom_open_api(app)
+
         return app
+
+    @staticmethod
+    def _custom_open_api(app: FastAPI) -> dict[str, Any]:
+        openapi_schema = app.openapi()
+        for path_item in openapi_schema.get("paths", {}).values():
+            for operation in path_item.values():
+                if not isinstance(operation, dict):
+                    continue
+
+                responses = operation.get("responses", {})
+                responses.pop("422", None)
+        return openapi_schema

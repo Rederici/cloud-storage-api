@@ -132,4 +132,4 @@ async def test_delete_with_invalid_path(
         path=path,
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == status.HTTP_400_BAD_REQUEST

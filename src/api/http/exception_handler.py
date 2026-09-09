@@ -1,3 +1,5 @@
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -13,6 +15,39 @@ def get_status_code(exc: AppError) -> int:
             return status_code
 
     return 500
+
+
+async def base_error_handler(_: Request, exc: HTTPException) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(message=exc.detail).model_dump(mode="json"),
+    )
+
+
+async def validation_error_handler(
+    _: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    errors = []
+
+    for error in exc.errors():
+        location = error["loc"]
+
+        if location and location[0] in {"body", "query", "path", "header"}:
+            location = location[1:]
+
+        field = ".".join(str(part) for part in location)
+
+        message = error["msg"]
+
+        errors.append(f"{field}: {message}")
+
+    return JSONResponse(
+        status_code=400,
+        content=ErrorResponse(
+            message="; ".join(errors),
+        ).model_dump(mode="json"),
+    )
 
 
 async def error_handler(_: Request, exc: AppError) -> JSONResponse:

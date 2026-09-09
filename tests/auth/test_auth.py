@@ -42,9 +42,9 @@ async def test_register_success(client: AsyncClient, user: CredentialsRequest):
         "missing-username-and-password",
     ],
 )
-async def test_register_invalid_payload_returns_422(client: AsyncClient, invalid_payload: dict):
+async def test_register_invalid_payload_returns_400(client: AsyncClient, invalid_payload: dict):
     response = await client.post("/api/v1/auth/sign-up", json=invalid_payload)
-    assert response.status_code == 422
+    assert response.status_code == 400
 
 
 async def test_register_duplicate_email_returns_409(client: AsyncClient, registered_user: CredentialsRequest):
