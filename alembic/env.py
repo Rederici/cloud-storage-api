@@ -17,7 +17,7 @@ target_metadata = Base.metadata
 
 app_config = Config()
 
-if config.get_main_option("sqlalchemy.url") is None:
+if not config.get_main_option("sqlalchemy.url"):
     config.set_main_option("sqlalchemy.url", app_config.postgres.get_dsn(sync=True))
 
 
