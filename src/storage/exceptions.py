@@ -39,4 +39,4 @@ class FileTooLarge(StorageError):
 
 
 class InvalidPath(StorageError):
-    message = "Invalid path"
+    message = "Invalid path '{path}'"

@@ -14,6 +14,7 @@ from types_aiobotocore_s3.type_defs import (
 
 from src.storage.constants import CHUNK_SIZE
 from src.storage.exceptions import (
+    InvalidPath,
     ParentDirectoryDoesNotExist,
     ResourceAlreadyExists,
     ResourceCreationConflict,
@@ -30,19 +31,100 @@ class StorageRepository:
 
     async def get(self, path: UserSpacePath) -> StoredResource:
         try:
-            return self._map_s3_head(
-                path=path,
-                item=await self._s3.head_object(
-                    Bucket=self._bucket_name,
-                    Key=path.storage_key,
-                ),
+            response = await self._s3.head_object(
+                Bucket=self._bucket_name,
+                Key=path.storage_key,
             )
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
 
-            if error_code == "404":
+            if error_code in {"NoSuchKey", "404", "NotFound"}:
                 raise ResourceNotFound(resource=path.public_path) from None
             raise
+
+        content_type = response["ContentType"]
+
+        if content_type == "application/x-directory":
+            return StoredResource(
+                path=path.public_path,
+                size=0,
+                type=ResourceType.DIRECTORY,
+            )
+
+        return StoredResource(
+            path=path.public_path,
+            size=response["ContentLength"] or 0,
+            type=ResourceType.FILE,
+        )
+
+    async def move(
+        self,
+        source: UserSpacePath,
+        destination: UserSpacePath,
+    ) -> StoredResource:
+        if source.is_root:
+            raise InvalidPath(path=source.public_path)
+
+        if not await self.exists(source):
+            raise ResourceNotFound(resource=source.public_path)
+
+        if await self.exists(destination):
+            raise ResourceAlreadyExists(resource=destination.public_path)
+
+        if source.is_directory and destination.public_path.value.startswith(source.public_path.value):
+            raise InvalidPath(path=destination.public_path)
+
+        if source.is_file:
+            await self._s3.copy_object(
+                Bucket=self._bucket_name,
+                Key=destination.storage_key,
+                CopySource={
+                    "Bucket": self._bucket_name,
+                    "Key": source.storage_key,
+                },
+            )
+            await self._delete_object(source)
+
+            return await self.get(destination)
+
+        await self.create_directory(
+            path=destination,
+            parents=True,
+        )
+
+        async for item in self.list_directory(source, first_level=False):
+            relative_path = item.path.value.removeprefix(
+                source.public_path.value,
+            )
+
+            destination_path = UserSpacePath(
+                value=str(destination.public_path / relative_path),
+                user_id=source.user_id,
+            )
+
+            item_source = UserSpacePath(
+                value=str(item.path),
+                user_id=source.user_id,
+            )
+
+            if item.type == ResourceType.FILE:
+                await self._s3.copy_object(
+                    Bucket=self._bucket_name,
+                    Key=destination_path.storage_key,
+                    CopySource={
+                        "Bucket": self._bucket_name,
+                        "Key": item_source.storage_key,
+                    },
+                )
+            else:
+                await self.create_directory(
+                    path=destination_path,
+                    parents=True,
+                )
+
+        await self._delete_recursive(source)
+
+        return await self.get(destination)
 
     async def _create_directory_recursively(self, path: UserSpacePath) -> None:
         dirs = []
@@ -103,21 +185,28 @@ class StorageRepository:
             )
 
     async def get_content(self, path: UserSpacePath) -> AsyncIterator[bytes]:
-        response = await self._s3.get_object(
-            Bucket=self._bucket_name,
-            Key=path.storage_key,
-        )
+        try:
+            response = await self._s3.get_object(
+                Bucket=self._bucket_name,
+                Key=path.storage_key,
+            )
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+
+            if error_code == "NoSuchKey":
+                raise ResourceNotFound(resource=path.public_path) from None
+            raise
+
         body = response["Body"]
 
-        while chunk := await body.read(CHUNK_SIZE):
-            yield chunk
+        async def stream() -> AsyncIterator[bytes]:
+            try:
+                while chunk := await body.read(CHUNK_SIZE):
+                    yield chunk
+            finally:
+                body.close()
 
-    async def rename(self, source: UserSpacePath, destination: UserSpacePath) -> None:
-        await self._s3.rename_object(
-            Bucket=self._bucket_name,
-            RenameSource=source.storage_key,
-            Key=destination.storage_key,
-        )
+        return stream()
 
     async def list_directory(self, path: UserSpacePath, *, first_level: bool = True) -> AsyncIterator[StoredResource]:
         paginator = self._s3.get_paginator("list_objects_v2")

@@ -100,11 +100,10 @@ async def move_resource(
     *,
     source: Annotated[AnyPath, Query(alias="from")],
     dest: Annotated[AnyPath, Query(alias="to")],
-) -> None:
-    if source.is_file != dest.is_file:
-        raise ValueError("")
-
-    await storage_service.move(source, dest, user_id=user.id)
+) -> ResourceResponse:
+    return ResourceResponse.from_domain(
+        await storage_service.move(source, dest, user_id=user.id),
+    )
 
 
 @ResourceRouter.get(

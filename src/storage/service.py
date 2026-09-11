@@ -1,13 +1,15 @@
+from collections.abc import AsyncIterable, AsyncIterator
 from datetime import datetime
 from stat import S_IFREG
 
 from botocore.client import ClientError
 from fastapi import UploadFile
-from stream_zip import ZIP_64, async_stream_zip
+from stream_zip import ZIP_64, Method, async_stream_zip
 from types_aiobotocore_s3.client import S3Client
 
 from .exceptions import (
     InvalidFileName,
+    InvalidPath,
     ParentDirectoryDoesNotExist,
     ResourceAlreadyExists,
 )
@@ -139,37 +141,41 @@ class StorageService:
             return DownloadResult(
                 filename=user_path.name,
                 content_type="application/octet-stream",
-                content=self._storage_repo.get_content(user_path),
+                content=await self._storage_repo.get_content(user_path),
             )
 
         return DownloadResult(
             filename=f"{user_path.name}.zip",
             content_type="application/zip",
-            content=async_stream_zip(self._stream_zip(user_path)),
+            content=async_stream_zip(await self._stream_zip(user_path)),
         )
 
     async def _stream_zip(self, user_path: UserSpacePath):
-        async for item in self._storage_repo.list_directory(user_path, first_level=False):
-            yield (
-                str(item.path).removeprefix("/"),
-                datetime.now(),
-                S_IFREG | 0o600,
-                ZIP_64,
-                self._storage_repo.get_content(
-                    UserSpacePath(
-                        value=str(item.path),
-                        user_id=user_path.user_id,
-                    )
-                ),
-            )
+        async def stream() -> AsyncIterator[tuple[str, datetime, int, Method, AsyncIterable[bytes]]]:
+            async for item in self._storage_repo.list_directory(user_path, first_level=False):
+                yield (
+                    str(item.path).removeprefix("/"),
+                    datetime.now(),
+                    S_IFREG | 0o600,
+                    ZIP_64,
+                    await self._storage_repo.get_content(
+                        UserSpacePath(
+                            value=str(item.path),
+                            user_id=user_path.user_id,
+                        )
+                    ),
+                )
 
-    async def move(self, source: ResourcePath, destination: ResourcePath, *, user_id: int) -> None:
-        user_source = await self._ensure_parent_exists(source, user_id=user_id)
-        user_dest = await self._ensure_parent_exists(destination, user_id=user_id)
+        return stream()
 
-        if user_source.is_file:
-            await self._storage_repo.rename(user_source, user_dest)
-            return
+    async def move(self, source: ResourcePath, destination: ResourcePath, *, user_id: int) -> StoredResource:
+        try:
+            user_source = await self._ensure_parent_exists(source, user_id=user_id)
+            user_dest = await self._ensure_parent_exists(destination, user_id=user_id)
+        except ParentDirectoryDoesNotExist as e:
+            raise InvalidPath(path=e.kwargs["resource"]) from e
+
+        return await self._storage_repo.move(user_source, user_dest)
 
     async def search(self, query: str, *, user_id: int) -> list[StoredResource]:
         ...

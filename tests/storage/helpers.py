@@ -2,7 +2,11 @@ from dataclasses import dataclass
 
 from httpx import AsyncClient, Response
 
-DIRECTORY_URL = "/api/v1/directory"
+CONTEXT = "/api/v1"
+DIRECTORY_URL = f"{CONTEXT}/directory"
+RESOURCES_URL = f"{CONTEXT}/resources"
+MOVE_URL = f"{RESOURCES_URL}/move"
+DOWNLOAD_URL = f"{RESOURCES_URL}/download"
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +30,10 @@ async def create_directory(
     client: AsyncClient,
     path: str,
 ) -> Response:
-    return await client.post(DIRECTORY_URL, params={"path": path})
+    return await client.post(
+        DIRECTORY_URL,
+        params={"path": path},
+    )
 
 
 async def upload_resources(
@@ -35,14 +42,9 @@ async def upload_resources(
     *,
     path: str = "/",
 ) -> Response:
-    params = {}
-
-    if path is not None:
-        params["path"] = path
-
     return await client.post(
-        "/api/v1/resources",
-        params=params,
+        RESOURCES_URL,
+        params={"path": path},
         files=[upload.as_multipart() for upload in uploads],
     )
 
@@ -53,6 +55,32 @@ async def delete_resource(
     path: str,
 ):
     return await client.delete(
-        "/api/v1/resources",
+        RESOURCES_URL,
+        params={"path": path},
+    )
+
+
+async def move_resource(
+    client: AsyncClient,
+    *,
+    source: str,
+    destination: str,
+):
+    return await client.post(
+        MOVE_URL,
+        params={
+            "from": source,
+            "to": destination,
+        },
+    )
+
+
+async def download_resource(
+    client: AsyncClient,
+    *,
+    path: str,
+):
+    return await client.get(
+        DOWNLOAD_URL,
         params={"path": path},
     )
