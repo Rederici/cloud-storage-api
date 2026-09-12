@@ -119,7 +119,9 @@ class StorageService:
         *,
         user_id: int,
     ) -> list[StoredResource]:
-        return [i async for i in self._storage_repo.list_directory(UserSpacePath(value=str(path), user_id=user_id))]
+        return [
+            i async for i in await self._storage_repo.list_directory(UserSpacePath(value=str(path), user_id=user_id))
+        ]
 
     async def get(
         self,
@@ -152,7 +154,7 @@ class StorageService:
 
     async def _stream_zip(self, user_path: UserSpacePath):
         async def stream() -> AsyncIterator[tuple[str, datetime, int, Method, AsyncIterable[bytes]]]:
-            async for item in self._storage_repo.list_directory(user_path, first_level=False):
+            async for item in await self._storage_repo.list_directory(user_path, recursive=True):
                 yield (
                     str(item.path).removeprefix("/"),
                     datetime.now(),
@@ -180,6 +182,7 @@ class StorageService:
     async def search(self, query: str, *, user_id: int) -> list[StoredResource]:
         items = await self._storage_repo.search(query, user_id=user_id)
         return [i async for i in items]
+
 
 class StorageInitializer:
     def __init__(self, s3_client: S3Client, bucket_name: str):

@@ -93,7 +93,7 @@ class StorageRepository:
             parents=True,
         )
 
-        async for item in self.list_directory(source, first_level=False):
+        async for item in await self.list_directory(source, recursive=True):
             relative_path = item.path.value.removeprefix(
                 source.public_path.value,
             )
@@ -177,7 +177,7 @@ class StorageRepository:
         )
 
     async def _delete_recursive(self, path: UserSpacePath):
-        async for item in self.list_directory(path, first_level=False):
+        async for item in await self.list_directory(path, recursive=True):
             await self._delete_object(
                 UserSpacePath(
                     value=str(item.path),
@@ -209,7 +209,7 @@ class StorageRepository:
 
         return stream()
 
-    async def list_directory(self, path: UserSpacePath, *, first_level: bool = True) -> AsyncIterator[StoredResource]:
+    async def list_directory(self, path: UserSpacePath, *, recursive: bool = False) -> AsyncIterator[StoredResource]:
         paginator = self._s3.get_paginator("list_objects_v2")
 
         params: ListObjectsV2RequestPaginateTypeDef = {
@@ -220,29 +220,29 @@ class StorageRepository:
             },
         }
 
-        if first_level:
+        if not recursive:
             params["Delimiter"] = "/"
 
-        is_first_page = True
-        async for page in paginator.paginate(**params):
-            items = page.get("Contents", [])
-            if is_first_page and not items:
-                raise ParentDirectoryDoesNotExist(resource=path)
+        async def iterator() -> AsyncIterator[StoredResource]:
+            is_first_page = True
+            async for page in paginator.paginate(**params):
+                items = page.get("Contents", [])
+                if is_first_page and not items:
+                    raise ParentDirectoryDoesNotExist(resource=path)
 
-            if is_first_page:
-                is_first_page = False
+                if is_first_page:
+                    is_first_page = False
 
-            for prefix in page.get("CommonPrefixes", []):
-                yield self._map_s3_prefix(prefix)
+                for prefix in page.get("CommonPrefixes", []):
+                    yield self._map_s3_prefix(prefix)
 
-            for item in items:
-                if item.get("Key") == path.storage_key:
-                    continue
+                for item in items:
+                    if item.get("Key") == path.storage_key:
+                        continue
 
-                yield self._map_s3_object(item)
+                    yield self._map_s3_object(item)
 
-        if is_first_page:
-            raise ResourceNotFound(resource=path)
+        return iterator()
 
     async def exists(self, path: UserSpacePath) -> bool:
         try:
@@ -250,15 +250,15 @@ class StorageRepository:
             return True
         except ResourceNotFound:
             return False
-        except ClientError:
-            raise
 
     async def search(self, query: str, *, user_id: int) -> AsyncIterator[StoredResource]:
         user_path = UserSpacePath(value="/", user_id=user_id)
+
         async def iterator() -> AsyncIterator[StoredResource]:
-            async for i in self.list_directory(user_path, first_level=False):
+            async for i in await self.list_directory(user_path, recursive=True):
                 if query in str(i.path):
                     yield i
+
         return iterator()
 
     async def upload_file(
