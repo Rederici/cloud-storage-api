@@ -1,3 +1,9 @@
+## v0.2.4 (2026-09-12)
+
+### Fix
+
+- **ci**: remove depends_on from backend service
+
 ## v0.2.3 (2026-09-12)
 
 ### Fix
