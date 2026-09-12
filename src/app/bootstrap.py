@@ -14,6 +14,7 @@ from src.auth import AuthProvider, AuthRouter
 from src.config import Config, ConfigProvider
 from src.config.models import Env
 from src.exceptions import AppError
+from src.health import HealthRouter
 from src.persistance import BotoProvider, RedisProvider, SQLAlchemyProvider
 from src.storage import StorageProvider
 from src.storage.routes import DirectoryRouter, ResourceRouter
@@ -80,7 +81,8 @@ class Bootstrap:
 
     def app(self) -> FastAPI:
         app = FastAPI(
-            title="Cloud Storage",
+            title=self.config.project.display_name,
+            version=self.config.project.version,
             lifespan=Lifespan.context,
             debug=self.config.env != Env.PROD,
             exception_handlers={
@@ -106,6 +108,7 @@ class Bootstrap:
         for router in self.api_routers:
             api.include_router(router)
 
+        app.include_router(HealthRouter)
         app.include_router(api, prefix="/api/v1")
 
         app.openapi_schema = self._custom_open_api(app)
