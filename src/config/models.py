@@ -1,7 +1,7 @@
 from datetime import timedelta
 from enum import StrEnum
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -21,16 +21,18 @@ class PostgresConfig(BaseModel):
     port: int = Field(default=5432)
     database: str = Field(default="postgres", validation_alias=AliasChoices("name", "database"))
     username: str = Field(default="postgres", validation_alias=AliasChoices("user", "username"))
-    password: str = Field(default="postgres", validation_alias=AliasChoices("pass", "password"))
+    password: SecretStr = Field(default=SecretStr("postgres"), validation_alias=AliasChoices("pass", "password"))
 
     def get_dsn(self, sync: bool = False) -> str:
         engine = "psycopg" if sync else "asyncpg"
-        return f"postgresql+{engine}://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+        return f"postgresql+{engine}://{self.username}:{self.password.get_secret_value()}@{self.host}:{self.port}/{self.database}"
 
 
 class RedisConfig(BaseModel):
     host: str = Field(default="localhost")
     port: int = Field(default=6379)
+    username: str | None = Field(default=None, validation_alias=AliasChoices("user", "username"))
+    password: SecretStr | None = Field(default=None, validation_alias=AliasChoices("pass", "password"))
     database: int = Field(default=0, ge=0)
 
     def get_dsn(self) -> str:
@@ -51,8 +53,8 @@ class MinioConfig(BaseModel):
 
 
 class CorsConfig(BaseModel):
-    allow_origins: list[str] = Field(default_factory=lambda: ["http://127.0.0.1:5173", "http://localhost:5173"])
     allow_credentials: bool = True
+    allow_origins: list[str] = Field(default_factory=lambda: ["http://127.0.0.1:5173", "http://localhost:5173"])
     allow_methods: list[str] = Field(default_factory=lambda: ["*"])
     allow_headers: list[str] = Field(default_factory=lambda: ["*"])
 
@@ -62,13 +64,26 @@ class Env(StrEnum):
     DEV = "dev"
 
 
+class Project(BaseModel):
+    name: str = "cloud-storage-api"
+    version: str = Field(default="0.1.0", pattern=r"^\d+(?:\.\d+){2}$")
+
+    @property
+    def display_name(self) -> str:
+        return self.name.replace("-", " ").title()
+
+
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         env_nested_delimiter="__",
+        pyproject_toml_depth=2,
+        pyproject_toml_table_header=(),
+        extra="ignore",
     )
 
+    project: Project = Field(default_factory=Project)
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
     minio: MinioConfig = Field(default_factory=MinioConfig)
