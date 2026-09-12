@@ -7,7 +7,6 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
-from alembic import command
 from alembic.config import Config as AlembicConfig
 from asgi_lifespan import LifespanManager
 from dishka import Scope
@@ -18,6 +17,7 @@ from testcontainers.core.container import DockerContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
+from alembic import command
 from src.app.bootstrap import Bootstrap
 from src.auth.schemas import CredentialsRequest
 from src.config.models import Config, Env, PostgresConfig, RedisConfig, RustfsConfig

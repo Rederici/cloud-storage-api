@@ -1,0 +1,181 @@
+stages:
+  - lint
+  - test
+  - security
+  - release      # только на main: cz bump создаёт следующий semver-тег
+  - build        # билд и push образа
+  - deploy       # миграции + раскатка
+
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE"
+  PYTHON_IMAGE: "python:3.14-slim"
+
+# Переиспользуемые условия и база для uv-джоб
+.rules_always: &rules_always
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+.uv_base: &uv_base
+  image: $PYTHON_IMAGE
+  before_script:
+    - pip install --no-cache-dir uv
+    - uv sync --frozen --group dev
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .cache/uv
+
+# STAGE: lint
+lint:ruff:
+  stage: lint
+  <<: *uv_base
+  <<: *rules_always
+  script:
+    - uv run ruff check .
+    - uv run ruff format --check .
+
+lint:basedpyright:
+  stage: lint
+  <<: *uv_base
+  <<: *rules_always
+  script:
+    - uv run basedpyright .
+
+# STAGE: test
+test:pytest:
+  stage: test
+  <<: *uv_base
+  <<: *rules_always
+  tags:
+    - docker-socket
+  script:
+    - uv run pytest --cov=src --cov-report=term-missing
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+
+# STAGE: security
+security:pip-audit:
+  stage: security
+  <<: *uv_base
+  <<: *rules_always
+  script:
+    - uv export --no-hashes --no-dev -o requirements.audit.txt
+    - uv run --with pip-audit pip-audit -r requirements.audit.txt
+
+security:bandit:
+  stage: security
+  <<: *uv_base
+  <<: *rules_always
+  script:
+    - uv run bandit -r src -x ./tests --skip B101
+
+security:gitleaks:
+  stage: security
+  image: zricethezav/gitleaks:latest
+  <<: *rules_always
+  allow_failure: false
+  script:
+    - gitleaks detect --source . --verbose --redact
+
+# STAGE: release
+release:bump-version:
+  stage: release
+  <<: *uv_base
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - git remote set-url origin "https://gitlab-ci-token:${CI_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - git config user.email "ci@example.com"
+    - git config user.name "CI Bot"
+    - uv run cz bump --yes --changelog
+    - git push origin HEAD:main --tags
+
+# STAGE: build
+build:edge:
+  stage: build
+  image: docker:26
+  tags:
+    - docker-socket
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  script:
+    - docker build -t "$IMAGE_NAME:edge" -t "$IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA" .
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker push "$IMAGE_NAME:edge"
+    - docker push "$IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA"
+
+build:release:
+  stage: build
+  image: docker:26
+  tags:
+    - docker-socket
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  script:
+    - docker build -t "$IMAGE_NAME:${CI_COMMIT_TAG#v}" -t "$IMAGE_NAME:latest" .
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker push "$IMAGE_NAME:${CI_COMMIT_TAG#v}"
+    - docker push "$IMAGE_NAME:latest"
+
+# STAGE: deploy
+deploy:staging:
+  stage: deploy
+  image: docker:26
+  tags:
+    - docker-socket
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  environment:
+    name: staging
+  needs: ["build:edge"]
+  variables:
+    IMAGE_TAG: "dev-$CI_COMMIT_SHORT_SHA"
+  script:
+    - cp "$APP_ENV_FILE" .env
+    - docker compose pull app
+    - docker compose run --rm app alembic upgrade head
+    - docker compose up -d app
+
+deploy:production:
+  stage: deploy
+  image: docker:26
+  tags:
+    - docker-socket
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+      when: manual
+  environment:
+    name: production
+  needs: ["build:release"]
+  variables:
+    IMAGE_TAG: "${CI_COMMIT_TAG#v}"
+  script:
+    - cp "$APP_ENV_FILE" .env
+    - docker compose pull app
+    - docker compose run --rm app alembic upgrade head
+    - docker compose up -d app
+
+# Down-migration - только руками
+migrate:down:
+  stage: deploy
+  image: docker:26
+  tags:
+    - docker-socket
+  rules:
+    - when: manual
+  variables:
+    REVISION: ""
+  environment:
+    name: production
+  script:
+    - |
+      if [ -z "$REVISION" ]; then
+        echo "REVISION is undefined - stopping"
+        exit 1
+      fi
+    - cp "$APP_ENV_FILE" .env
+    - docker compose run --rm app alembic downgrade $REVISION

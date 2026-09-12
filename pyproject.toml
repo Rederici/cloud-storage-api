@@ -19,11 +19,8 @@ dependencies = [
     "loguru (>=0.7.3,<0.8.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "cryptography>=49.0.0,<50.0.2",
-    "python-jose[cryptography] (>=3.5.0,<4.0.0)",
-    "passlib[bcrypt] (>=1.7.4,<2.0.0)",
     "authlib (>=1.7.2,<2.0.0)",
-    "commitizen (>=4.16.4,<5.0.0)",
-    "cashews[diskcache,redis] (>=7.5.0,<8.0.0)",
+    "cashews[redis] (>=7.5.0,<8.0.0)",
     "dishka (>=1.10.1,<2.0.0)",
     "argon2-cffi (>=25.1.0,<26.0.0)",
     "aioboto3 (>=15.5.0,<16.0.0)",
@@ -43,6 +40,9 @@ dev = [
     "basedpyright>=1.40.0",
     "testcontainers[postgres,redis]>=4.15.0",
     "asgi-lifespan (>=2.1.0,<3.0.0)",
+    "bandit>=1.9.4",
+    "pip-audit>=2.10.1",
+    "commitizen>=4.18.0",
 ]
 
 [tool.uv]
@@ -104,3 +104,11 @@ omit = ["tests/", "migrations/"]
 
 [tool.coverage.report]
 omit = ["tests/", "migrations/"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+version_scheme = "semver"
+tag_format = "v$version"
+update_changelog_on_bump = true
+major_version_zero = true
