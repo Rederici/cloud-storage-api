@@ -1,3 +1,9 @@
+## v0.2.1 (2026-09-12)
+
+### Fix
+
+- **ci**: fix recursive pipeline call in version release
+
 ## v0.2.0 (2026-09-12)
 
 ### Feat
