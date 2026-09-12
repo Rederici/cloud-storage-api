@@ -98,7 +98,8 @@ release:bump-version:
     - git config user.email "ci@example.com"
     - git config user.name "CI Bot"
     - uv run cz bump --yes --changelog
-    - git push origin HEAD:main --tags
+    - git push origin HEAD:main -o ci.skip
+    - git push origin --tags
 
 # STAGE: build
 build:edge:
@@ -173,6 +174,7 @@ migrate:down:
     - docker-socket
   rules:
     - when: manual
+  allow_failure: true
   variables:
     REVISION: ""
   environment:
