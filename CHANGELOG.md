@@ -1,3 +1,9 @@
+## v0.2.2 (2026-09-12)
+
+### Fix
+
+- **ci**: fix service name mismatch in deploy jobs (app -> backend)
+
 ## v0.2.1 (2026-09-12)
 
 ### Fix
