@@ -143,6 +143,7 @@ deploy:staging:
     IMAGE_TAG: "dev-$CI_COMMIT_SHORT_SHA"
   script:
     - cp "$APP_ENV_FILE" .env
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker compose pull backend
     - docker compose run --rm backend alembic upgrade head
     - docker compose up -d backend
@@ -162,6 +163,7 @@ deploy:production:
     IMAGE_TAG: "${CI_COMMIT_TAG#v}"
   script:
     - cp "$APP_ENV_FILE" .env
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker compose pull backend
     - docker compose run --rm backend alembic upgrade head
     - docker compose up -d backend
@@ -186,4 +188,5 @@ migrate:down:
         exit 1
       fi
     - cp "$APP_ENV_FILE" .env
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker compose run --rm backend alembic downgrade $REVISION
