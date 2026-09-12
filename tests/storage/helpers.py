@@ -7,6 +7,7 @@ DIRECTORY_URL = f"{CONTEXT}/directory"
 RESOURCES_URL = f"{CONTEXT}/resources"
 MOVE_URL = f"{RESOURCES_URL}/move"
 DOWNLOAD_URL = f"{RESOURCES_URL}/download"
+SEARCH_URL = f"{RESOURCES_URL}/search"
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,4 +84,15 @@ async def download_resource(
     return await client.get(
         DOWNLOAD_URL,
         params={"path": path},
+    )
+
+
+async def search_resources(
+    client: AsyncClient,
+    *,
+    query: str,
+):
+    return await client.get(
+        SEARCH_URL,
+        params={"query": query},
     )

@@ -118,10 +118,10 @@ async def search_resource(
     user: CurrentUser,
     storage_service: Inject[StorageService],
     *,
-    query: str,
+    query: str = Query(min_length=1, max_length=128),
 ) -> list[ResourceResponse]:
-    ...
-    # items = await storage_service.search(query, user_id=user.id)
+    items = await storage_service.search(query, user_id=user.id)
+    return [ResourceResponse.from_domain(i) for i in items]
 
 
 @ResourceRouter.post(

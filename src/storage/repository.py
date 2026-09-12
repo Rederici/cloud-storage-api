@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import suppress
 from typing import BinaryIO
+from uuid import UUID
 
 from botocore.exceptions import ClientError
 from starlette import status
@@ -252,6 +253,14 @@ class StorageRepository:
         except ClientError:
             raise
 
+    async def search(self, query: str, *, user_id: int) -> AsyncIterator[StoredResource]:
+        user_path = UserSpacePath(value="/", user_id=user_id)
+        async def iterator() -> AsyncIterator[StoredResource]:
+            async for i in self.list_directory(user_path, first_level=False):
+                if query in str(i.path):
+                    yield i
+        return iterator()
+
     async def upload_file(
         self,
         file: BinaryIO,
@@ -290,7 +299,7 @@ class StorageRepository:
         return StoredResource(
             path=path.public_path,
             size=item.get("Size", 0),
-            type=ResourceType.FILE,
+            type=ResourceType.DIRECTORY if str(path).endswith("/") else ResourceType.FILE,
         )
 
     @staticmethod

@@ -178,7 +178,8 @@ class StorageService:
         return await self._storage_repo.move(user_source, user_dest)
 
     async def search(self, query: str, *, user_id: int) -> list[StoredResource]:
-        ...
+        items = await self._storage_repo.search(query, user_id=user_id)
+        return [i async for i in items]
 
 class StorageInitializer:
     def __init__(self, s3_client: S3Client, bucket_name: str):
