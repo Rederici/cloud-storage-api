@@ -90,6 +90,7 @@ class Config(BaseSettings):
     cors: CorsConfig = Field(default_factory=CorsConfig)
     session_ttl: timedelta = Field(default=timedelta(days=7))
     env: Env = Field(default=Env.DEV)
+    swagger_enable: bool = False
 
     @classmethod
     def settings_customise_sources(
