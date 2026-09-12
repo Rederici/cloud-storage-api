@@ -3,16 +3,17 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
-from alembic import command
 from alembic.config import Config as AlembicConfig
 from asgi_lifespan import LifespanManager
 from dishka import Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from pydantic import SecretStr
 from testcontainers.minio import MinioContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
+from alembic import command
 from src.app.bootstrap import Bootstrap
 from src.auth.schemas import CredentialsRequest
 from src.config.models import Config, Env, MinioConfig, PostgresConfig, RedisConfig
@@ -48,7 +49,7 @@ def config(
             host=postgres_container.get_container_host_ip(),
             port=postgres_container.get_exposed_port(5432),
             username=postgres_container.username,
-            password=postgres_container.password,
+            password=SecretStr(postgres_container.password),
             database=postgres_container.dbname,
         ),
         redis=RedisConfig(
