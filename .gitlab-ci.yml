@@ -87,6 +87,10 @@ security:gitleaks:
 release:bump-version:
   stage: release
   <<: *uv_base
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
+    - pip install --no-cache-dir uv
+    - uv sync --frozen --group dev
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
