@@ -143,9 +143,9 @@ deploy:staging:
     IMAGE_TAG: "dev-$CI_COMMIT_SHORT_SHA"
   script:
     - cp "$APP_ENV_FILE" .env
-    - docker compose pull app
-    - docker compose run --rm app alembic upgrade head
-    - docker compose up -d app
+    - docker compose pull backend
+    - docker compose run --rm backend alembic upgrade head
+    - docker compose up -d backend
 
 deploy:production:
   stage: deploy
@@ -162,9 +162,9 @@ deploy:production:
     IMAGE_TAG: "${CI_COMMIT_TAG#v}"
   script:
     - cp "$APP_ENV_FILE" .env
-    - docker compose pull app
-    - docker compose run --rm app alembic upgrade head
-    - docker compose up -d app
+    - docker compose pull backend
+    - docker compose run --rm backend alembic upgrade head
+    - docker compose up -d backend
 
 # Down-migration - только руками
 migrate:down:
@@ -186,4 +186,4 @@ migrate:down:
         exit 1
       fi
     - cp "$APP_ENV_FILE" .env
-    - docker compose run --rm app alembic downgrade $REVISION
+    - docker compose run --rm backend alembic downgrade $REVISION
