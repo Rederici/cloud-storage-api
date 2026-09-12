@@ -75,7 +75,9 @@ security:bandit:
 
 security:gitleaks:
   stage: security
-  image: zricethezav/gitleaks:latest
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [ "" ]
   <<: *rules_always
   allow_failure: false
   script:
@@ -131,7 +133,7 @@ deploy:staging:
     - if: '$CI_COMMIT_BRANCH == "dev"'
   environment:
     name: staging
-  needs: ["build:edge"]
+  needs: [ "build:edge" ]
   variables:
     IMAGE_TAG: "dev-$CI_COMMIT_SHORT_SHA"
   script:
@@ -150,7 +152,7 @@ deploy:production:
       when: manual
   environment:
     name: production
-  needs: ["build:release"]
+  needs: [ "build:release" ]
   variables:
     IMAGE_TAG: "${CI_COMMIT_TAG#v}"
   script:
