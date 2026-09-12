@@ -28,7 +28,7 @@ class StorageProvider(Provider):
     ) -> IStorageRepository:
         return StorageRepository(
             s3_client=s3_client,
-            bucket_name=config.minio.bucket,
+            bucket_name=config.rustfs.bucket,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -37,7 +37,7 @@ class StorageProvider(Provider):
 
     @provide(scope=Scope.APP)
     def initializer(self, s3_client: S3Client, config: Config) -> StorageInitializer:
-        return StorageInitializer(s3_client=s3_client, bucket_name=config.minio.bucket)
+        return StorageInitializer(s3_client=s3_client, bucket_name=config.rustfs.bucket)
 
 
 def verify_files_size(

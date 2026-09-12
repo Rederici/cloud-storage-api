@@ -20,8 +20,8 @@ class BotoProvider(Provider):
     ) -> AsyncGenerator[S3Client]:
         async with session.client(  # pyright: ignore[reportGeneralTypeIssues]
             "s3",
-            endpoint_url=config.minio.url,
-            aws_access_key_id=config.minio.access_key_id,
-            aws_secret_access_key=config.minio.secret_access_key,
+            endpoint_url=config.rustfs.url,
+            aws_access_key_id=config.rustfs.access_key,
+            aws_secret_access_key=config.rustfs.secret_key,
         ) as client:
             yield client

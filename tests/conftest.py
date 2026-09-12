@@ -1,22 +1,26 @@
 import secrets
+import time
+import urllib
+import urllib.error
+import urllib.request
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
+from alembic import command
 from alembic.config import Config as AlembicConfig
 from asgi_lifespan import LifespanManager
 from dishka import Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic import SecretStr
-from testcontainers.minio import MinioContainer
+from testcontainers.core.container import DockerContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
-from alembic import command
 from src.app.bootstrap import Bootstrap
 from src.auth.schemas import CredentialsRequest
-from src.config.models import Config, Env, MinioConfig, PostgresConfig, RedisConfig
+from src.config.models import Config, Env, PostgresConfig, RedisConfig, RustfsConfig
 from tests.dependencies import TestPostgresProvider
 
 
@@ -33,8 +37,28 @@ def redis_container() -> Generator[RedisContainer]:
 
 
 @pytest.fixture(scope="session")
-def minio_container() -> Generator[MinioContainer]:
-    with MinioContainer() as container:
+def rustfs_container() -> Generator[DockerContainer]:
+    def _wait_for_rustfs(host: str, port: int, timeout: float = 30.0) -> None:
+        deadline = time.monotonic() + timeout
+        url = f"http://{host}:{port}/"
+        while time.monotonic() < deadline:
+            try:
+                urllib.request.urlopen(url, timeout=1)
+                return
+            except urllib.error.HTTPError:
+                return
+            except urllib.error.URLError, ConnectionError, OSError:
+                time.sleep(0.5)
+        raise TimeoutError(f"RustFS not ready at {url} after {timeout}s")
+
+    with (
+        DockerContainer("rustfs/rustfs:latest")
+        .with_env("RUSTFS_ACCESS_KEY", "rustfs")
+        .with_env("RUSTFS_SECRET_KEY", "rustfs")
+        .with_env("RUSTFS_VOLUMES", "/data")
+        .with_exposed_ports(9000) as container
+    ):
+        _wait_for_rustfs(container.get_container_host_ip(), container.get_exposed_port(9000))
         yield container
 
 
@@ -42,7 +66,7 @@ def minio_container() -> Generator[MinioContainer]:
 def config(
     postgres_container: PostgresContainer,
     redis_container: RedisContainer,
-    minio_container: MinioContainer,
+    rustfs_container: DockerContainer,
 ) -> Config:
     return Config(
         postgres=PostgresConfig(
@@ -57,12 +81,12 @@ def config(
             port=redis_container.get_exposed_port(6379),
             database=0,
         ),
-        minio=MinioConfig(
-            host=minio_container.get_container_host_ip(),
-            port=minio_container.get_exposed_port(9000),
-            access_key_id=minio_container.access_key,
-            secret_access_key=minio_container.secret_key,
+        rustfs=RustfsConfig(
+            host=rustfs_container.get_container_host_ip(),
+            port=rustfs_container.get_exposed_port(9000),
             bucket="test-bucket",
+            access_key="rustfs",
+            secret_key="rustfs",
             ssl=False,
         ),
         env=Env.DEV,

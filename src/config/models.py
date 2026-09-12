@@ -39,11 +39,11 @@ class RedisConfig(BaseModel):
         return f"redis://{self.host}:{self.port}/{self.database}"
 
 
-class MinioConfig(BaseModel):
+class RustfsConfig(BaseModel):
     host: str = Field(default="localhost")
     port: int = Field(default=9000)
-    access_key_id: str = Field(default="minio")
-    secret_access_key: str = Field(default="minio")
+    access_key: str = Field(default="rustfs")
+    secret_key: str = Field(default="rustfs")
     ssl: bool = Field(default=True)
     bucket: str = Field(default="ResourcesBucket")
 
@@ -86,7 +86,7 @@ class Config(BaseSettings):
     project: Project = Field(default_factory=Project)
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
-    minio: MinioConfig = Field(default_factory=MinioConfig)
+    rustfs: RustfsConfig = Field(default_factory=RustfsConfig)
     cors: CorsConfig = Field(default_factory=CorsConfig)
     session_ttl: timedelta = Field(default=timedelta(days=7))
     env: Env = Field(default=Env.DEV)
