@@ -85,7 +85,7 @@ pythonVersion = "3.14"
 executionEnvironments = [{ root = "." }]
 typeCheckingMode = "standard"
 include = ["src/", "tests/"]
-exclude = ["**/__pycache__", ".venv"]
+exclude = ["**/__pycache__", ".venv", ".cache/"]
 venvPath = "."
 venv = ".venv"
 
@@ -100,10 +100,10 @@ asyncio_default_test_loop_scope = "session"
 
 [tool.coverage.run]
 source = ["src/"]
-omit = ["tests/", "migrations/"]
+omit = ["tests/", "migrations/", ".cache/"]
 
 [tool.coverage.report]
-omit = ["tests/", "migrations/"]
+omit = ["tests/", "migrations/", ".cache/"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
