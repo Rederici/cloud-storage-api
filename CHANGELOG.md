@@ -1,3 +1,9 @@
+## v0.2.5 (2026-09-12)
+
+### Fix
+
+- guard types_aiobotocore_s3 import behind TYPE_CHECKING
+
 ## v0.2.4 (2026-09-12)
 
 ### Fix
