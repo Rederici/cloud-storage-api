@@ -1,7 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import suppress
 from typing import BinaryIO
-from uuid import UUID
 
 from botocore.exceptions import ClientError
 from starlette import status
