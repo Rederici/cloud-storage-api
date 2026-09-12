@@ -5,7 +5,8 @@ from stat import S_IFREG
 from botocore.client import ClientError
 from fastapi import UploadFile
 from stream_zip import ZIP_64, Method, async_stream_zip
-from types_aiobotocore_s3.client import S3Client
+
+from src.types_stubs import S3Client
 
 from .exceptions import (
     InvalidFileName,

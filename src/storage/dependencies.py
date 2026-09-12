@@ -3,12 +3,12 @@ from typing import Annotated
 from dishka import Provider, Scope, provide
 from fastapi import Depends, File, UploadFile
 from pydantic import AfterValidator
-from types_aiobotocore_s3.client import S3Client
 
 from src.config import Config
 from src.storage.constants import MAX_FILES_COUNT, MAX_TOTAL_FILES_SIZE
 from src.storage.exceptions import ContentSizeExceeded, TooManyFiles
 from src.storage.interface import IStorageRepository
+from src.types_stubs import S3Client
 
 from .repository import StorageRepository
 from .schemas import (

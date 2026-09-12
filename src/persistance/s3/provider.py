@@ -2,9 +2,9 @@ from collections.abc import AsyncGenerator
 
 import aioboto3
 from dishka import Provider, Scope, provide
-from types_aiobotocore_s3.client import S3Client
 
 from src.config import Config
+from src.types_stubs import S3Client
 
 
 class BotoProvider(Provider):

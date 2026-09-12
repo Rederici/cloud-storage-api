@@ -4,13 +4,6 @@ from typing import BinaryIO
 
 from botocore.exceptions import ClientError
 from starlette import status
-from types_aiobotocore_s3.client import S3Client
-from types_aiobotocore_s3.type_defs import (
-    CommonPrefixTypeDef,
-    HeadObjectOutputTypeDef,
-    ListObjectsV2RequestPaginateTypeDef,
-    ObjectTypeDef,
-)
 
 from src.storage.constants import CHUNK_SIZE
 from src.storage.exceptions import (
@@ -22,6 +15,13 @@ from src.storage.exceptions import (
     StorageError,
 )
 from src.storage.types import ResourceType, StoredResource, UserSpacePath
+from src.types_stubs import (
+    CommonPrefixTypeDef,
+    HeadObjectOutputTypeDef,
+    ListObjectsV2RequestPaginateTypeDef,
+    ObjectTypeDef,
+    S3Client,
+)
 
 
 class StorageRepository:
