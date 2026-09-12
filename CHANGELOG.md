@@ -1,3 +1,9 @@
+## v0.2.3 (2026-09-12)
+
+### Fix
+
+- **ci**: authenticate deploy jobs against the container registry
+
 ## v0.2.2 (2026-09-12)
 
 ### Fix
