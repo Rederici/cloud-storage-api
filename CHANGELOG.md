@@ -1,3 +1,9 @@
+## v0.2.6 (2026-09-13)
+
+### Fix
+
+- prevent folder duplication on move
+
 ## v0.2.5 (2026-09-12)
 
 ### Fix
