@@ -183,6 +183,7 @@ class StorageRepository:
                     user_id=path.user_id,
                 )
             )
+        await self._delete_object(path)
 
     async def get_content(self, path: UserSpacePath) -> AsyncIterator[bytes]:
         try:
