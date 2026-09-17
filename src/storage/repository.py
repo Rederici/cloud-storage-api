@@ -5,7 +5,6 @@ from typing import BinaryIO
 from botocore.exceptions import ClientError
 from starlette import status
 
-from src.storage.constants import CHUNK_SIZE
 from src.storage.exceptions import (
     InvalidPath,
     ParentDirectoryDoesNotExist,
@@ -25,8 +24,9 @@ from src.types_stubs import (
 
 
 class StorageRepository:
-    def __init__(self, s3_client: S3Client, bucket_name: str):
+    def __init__(self, s3_client: S3Client, bucket_name: str, chunk_size: int):
         self._bucket_name = bucket_name
+        self._chunk_size = chunk_size
         self._s3 = s3_client
 
     async def get(self, path: UserSpacePath) -> StoredResource:
@@ -202,7 +202,7 @@ class StorageRepository:
 
         async def stream() -> AsyncIterator[bytes]:
             try:
-                while chunk := await body.read(CHUNK_SIZE):
+                while chunk := await body.read(self._chunk_size):
                     yield chunk
             finally:
                 body.close()

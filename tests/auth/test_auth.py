@@ -1,14 +1,14 @@
 import pytest
 from httpx import AsyncClient
 
-from src.auth.constants import SESSION_COOKIE_NAME
 from src.auth.schemas import CredentialsRequest
+from src.config import Config
 
 
-async def test_register_success(client: AsyncClient, user: CredentialsRequest):
+async def test_register_success(client: AsyncClient, user: CredentialsRequest, config: Config):
     response = await client.post("/api/v1/auth/sign-up", json=user.model_dump())
     assert response.status_code == 201
-    assert SESSION_COOKIE_NAME in response.cookies
+    assert config.app.session.cookie_name in response.cookies
 
 
 @pytest.mark.parametrize(
@@ -52,10 +52,10 @@ async def test_register_duplicate_email_returns_409(client: AsyncClient, registe
     assert response.status_code == 409, response.json()["message"]
 
 
-async def test_login_success(client: AsyncClient, registered_user: CredentialsRequest):
+async def test_login_success(client: AsyncClient, registered_user: CredentialsRequest, config: Config):
     response = await client.post("/api/v1/auth/sign-in", json=registered_user.model_dump())
     assert response.status_code == 200
-    assert SESSION_COOKIE_NAME in response.cookies
+    assert config.app.session.cookie_name in response.cookies
 
 
 async def test_invalid_username_login_returns_401(client: AsyncClient, registered_user: CredentialsRequest):
@@ -91,8 +91,15 @@ async def test_get_user_info_with_empty_token_returns_401(client: AsyncClient):
     assert response.status_code == 401
 
 
-async def test_get_user_info_with_invalid_token_returns_401(client: AsyncClient, registered_user: CredentialsRequest):
-    client.cookies.set(SESSION_COOKIE_NAME, str(client.cookies.get(SESSION_COOKIE_NAME)) + "A")
+async def test_get_user_info_with_invalid_token_returns_401(
+    client: AsyncClient,
+    registered_user: CredentialsRequest,
+    config: Config,
+):
+    client.cookies.set(
+        config.app.session.cookie_name,
+        str(client.cookies.get(config.app.session.cookie_name)) + "A",
+    )
 
     response = await client.get("/api/v1/users/me")
     assert response.status_code == 401

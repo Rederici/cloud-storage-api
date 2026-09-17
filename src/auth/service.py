@@ -1,6 +1,6 @@
 import secrets
+from datetime import timedelta
 
-from src.config import Config
 from src.security import DUMMY_HASH, verify_password
 from src.storage import StorageService
 from src.user.service import UserService
@@ -11,20 +11,20 @@ from .schemas import AuthorizedDTO, TokenPayload
 
 
 class SessionService:
-    def __init__(self, config: Config, session_repo: ISessionRepository) -> None:
+    def __init__(self, session_repo: ISessionRepository, session_ttl: timedelta) -> None:
         self._session_repo = session_repo
-        self._config = config
+        self._session_ttl = session_ttl
 
     @staticmethod
     def generate_token() -> str:
         return secrets.token_hex(32)
 
     async def touch(self, token: str) -> None:
-        await self._session_repo.touch(token, self._config.session_ttl)
+        await self._session_repo.touch(token, self._session_ttl)
 
     async def create_session(self, user_id: int) -> str:
         token = self.generate_token()
-        await self._session_repo.create(user_id=user_id, token=token, ttl=self._config.session_ttl)
+        await self._session_repo.create(user_id=user_id, token=token, ttl=self._session_ttl)
         return token
 
     async def find_by_token(self, token: str) -> TokenPayload | None:

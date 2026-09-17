@@ -7,6 +7,7 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     PyprojectTomlConfigSettingsSource,
     SettingsConfigDict,
+    YamlConfigSettingsSource,
 )
 
 
@@ -73,6 +74,22 @@ class Project(BaseModel):
         return self.name.replace("-", " ").title()
 
 
+class FilesConfig(BaseModel):
+    max_total_size: int = Field(default=16 * 1024 * 1024, gt=0)
+    max_count: int = Field(default=1_000, gt=0)
+    chunk_size: int = Field(default=1_024 * 1_024, gt=0)
+
+
+class SessionConfig(BaseModel):
+    cookie_name: str = "sessionId"
+    ttl: timedelta = Field(default=timedelta(days=7))
+
+
+class AppConfig(BaseModel):
+    files: FilesConfig = Field(default_factory=FilesConfig)
+    session: SessionConfig = Field(default_factory=SessionConfig)
+
+
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -80,6 +97,8 @@ class Config(BaseSettings):
         env_nested_delimiter="__",
         pyproject_toml_depth=2,
         pyproject_toml_table_header=(),
+        yaml_file="config.yaml",
+        yaml_file_encoding="utf-8",
         extra="ignore",
     )
 
@@ -88,7 +107,7 @@ class Config(BaseSettings):
     redis: RedisConfig = Field(default_factory=RedisConfig)
     rustfs: RustfsConfig = Field(default_factory=RustfsConfig)
     cors: CorsConfig = Field(default_factory=CorsConfig)
-    session_ttl: timedelta = Field(default=timedelta(days=7))
+    app: AppConfig = Field(default_factory=AppConfig)
     env: Env = Field(default=Env.DEV)
     swagger_enable: bool = False
 
@@ -105,6 +124,7 @@ class Config(BaseSettings):
             init_settings,
             env_settings,
             dotenv_settings,
+            YamlConfigSettingsSource(settings_cls),
             PyprojectTomlConfigSettingsSource(settings_cls),
             file_secret_settings,
         )

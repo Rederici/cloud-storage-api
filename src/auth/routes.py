@@ -8,7 +8,6 @@ from starlette import status
 from starlette.responses import Response
 
 from src.api.http.schemas import ErrorResponse
-from src.auth.constants import SESSION_COOKIE_NAME
 from src.auth.schemas import CredentialsRequest
 from src.auth.service import AuthService
 from src.config import Config
@@ -20,11 +19,11 @@ router = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
 
 def set_token(response: Response, config: Config, token: str):
     response.set_cookie(
-        key=SESSION_COOKIE_NAME,
+        key=config.app.session.cookie_name,
         value=token,
         httponly=True,
         secure=config.env == Env.PROD,
-        max_age=int(config.session_ttl.total_seconds()),
+        max_age=int(config.app.session.ttl.total_seconds()),
     )
 
 

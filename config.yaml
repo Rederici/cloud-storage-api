@@ -1,0 +1,9 @@
+app:
+  files:
+    max_total_size: 16777216
+    max_count: 1000
+    chunk_size: 1048576
+
+  session:
+    cookie_name: sessionId
+    ttl: 7d

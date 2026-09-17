@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from dishka import Provider, Scope, provide
+from dishka import FromDishka, Provider, Scope, provide
+from dishka.integrations.fastapi import inject
 from fastapi import Depends, File, UploadFile
 from pydantic import AfterValidator
 
 from src.config import Config
-from src.storage.constants import MAX_FILES_COUNT, MAX_TOTAL_FILES_SIZE
 from src.storage.exceptions import ContentSizeExceeded, TooManyFiles
 from src.storage.interface import IStorageRepository
 from src.types_stubs import S3Client
@@ -29,6 +29,7 @@ class StorageProvider(Provider):
         return StorageRepository(
             s3_client=s3_client,
             bucket_name=config.rustfs.bucket,
+            chunk_size=config.app.files.chunk_size,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -40,33 +41,29 @@ class StorageProvider(Provider):
         return StorageInitializer(s3_client=s3_client, bucket_name=config.rustfs.bucket)
 
 
+@inject
 def verify_files_size(
-    max_total_files_size: int = MAX_TOTAL_FILES_SIZE,
-    max_files_count: int = MAX_FILES_COUNT,
-):
-    def verifier(
-        files: Annotated[
-            list[ValidatedUploadFile],
-            File(),
-            AfterValidator(validate_unique_filenames),
-        ],
-    ) -> ValidatedUploadFiles:
-        if len(files) > max_files_count:
-            raise TooManyFiles()
+    config: FromDishka[Config],
+    files: Annotated[
+        list[ValidatedUploadFile],
+        File(),
+        AfterValidator(validate_unique_filenames),
+    ],
+) -> ValidatedUploadFiles:
+    if len(files) > config.app.files.max_count:
+        raise TooManyFiles()
 
-        total_size = 0
-        for file in files:
-            if file.size is None:
-                raise ContentSizeExceeded()
+    total_size = 0
+    for file in files:
+        if file.size is None:
+            raise ContentSizeExceeded()
 
-            total_size += file.size
+        total_size += file.size
 
-            if total_size > max_total_files_size:
-                raise ContentSizeExceeded()
+        if total_size > config.app.files.max_total_size:
+            raise ContentSizeExceeded()
 
-        return files
-
-    return verifier
+    return files
 
 
-VerifiedFiles = Annotated[list[UploadFile], Depends(verify_files_size())]
+VerifiedFiles = Annotated[list[UploadFile], Depends(verify_files_size)]

@@ -23,7 +23,7 @@ class AuthProvider(Provider):
 
     @provide(scope=Scope.REQUEST)
     def session_service(self, config: Config, session_repo: SessionRepository) -> SessionService:
-        return SessionService(config, session_repo)
+        return SessionService(session_repo, config.app.session.ttl)
 
     @provide(scope=Scope.REQUEST)
     def auth_service(
