@@ -12,7 +12,7 @@ from pydantic import (
 )
 from pydantic_core.core_schema import ValidatorFunctionWrapHandler
 
-from .types import ResourcePath, ResourceType, StoredResource
+from cloud_storage.storage.types import ResourcePath, ResourceType, StoredResource
 
 
 def validate_resource_path(

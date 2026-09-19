@@ -2,11 +2,8 @@ from collections.abc import AsyncIterable, AsyncIterator
 from datetime import datetime
 from stat import S_IFREG
 
-from botocore.client import ClientError
 from fastapi import UploadFile
 from stream_zip import ZIP_64, Method, async_stream_zip
-
-from cloud_storage.types_stubs import S3Client
 
 from .exceptions import (
     InvalidFileName,
@@ -14,12 +11,12 @@ from .exceptions import (
     ParentDirectoryDoesNotExist,
     ResourceAlreadyExists,
 )
-from .interface import IStorageRepository
+from .ports import StorageRepository
 from .types import DownloadResult, ResourcePath, StoredResource, UserSpacePath
 
 
 class StorageService:
-    def __init__(self, storage_repo: IStorageRepository):
+    def __init__(self, storage_repo: StorageRepository):
         self._storage_repo = storage_repo
 
     async def init_root(self, user_id: int) -> None:
@@ -183,19 +180,3 @@ class StorageService:
     async def search(self, query: str, *, user_id: int) -> list[StoredResource]:
         items = await self._storage_repo.search(query, user_id=user_id)
         return [i async for i in items]
-
-
-class StorageInitializer:
-    def __init__(self, s3_client: S3Client, bucket_name: str):
-        self._s3 = s3_client
-        self._bucket_name = bucket_name
-
-    async def init_bucket(self) -> None:
-        try:
-            await self._s3.create_bucket(Bucket=self._bucket_name)
-        except ClientError as e:
-            if e.response.get("Error", {}).get("Code") not in (
-                "BucketAlreadyOwnedByYou",
-                "BucketAlreadyExists",
-            ):
-                raise

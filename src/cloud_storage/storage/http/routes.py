@@ -7,16 +7,15 @@ from fastapi.responses import StreamingResponse
 
 from cloud_storage.api.http.schemas import ErrorResponse
 from cloud_storage.auth.dependencies import CurrentUser
-
-from .dependencies import VerifiedFiles
-from .schemas import (
+from cloud_storage.storage.http.dependencies import VerifiedFiles
+from cloud_storage.storage.http.schemas import (
     AnyPath,
     DirectoryResponse,
     DirPath,
     ResourceResponse,
 )
-from .service import StorageService
-from .types import ResourceType
+from cloud_storage.storage.service import StorageService
+from cloud_storage.storage.types import ResourceType
 
 ResourceRouter = APIRouter(route_class=DishkaRoute, prefix="/resources", tags=["Resources"])
 DirectoryRouter = APIRouter(route_class=DishkaRoute, prefix="/directory", tags=["Directory"])

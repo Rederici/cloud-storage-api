@@ -5,6 +5,15 @@ from typing import BinaryIO
 from botocore.exceptions import ClientError
 from starlette import status
 
+from cloud_storage.storage.exceptions import (
+    InvalidPath,
+    ParentDirectoryDoesNotExist,
+    ResourceAlreadyExists,
+    ResourceCreationConflict,
+    ResourceNotFound,
+    StorageError,
+)
+from cloud_storage.storage.types import ResourceType, StoredResource, UserSpacePath
 from cloud_storage.types_stubs import (
     CommonPrefixTypeDef,
     HeadObjectOutputTypeDef,
@@ -13,18 +22,8 @@ from cloud_storage.types_stubs import (
     S3Client,
 )
 
-from .exceptions import (
-    InvalidPath,
-    ParentDirectoryDoesNotExist,
-    ResourceAlreadyExists,
-    ResourceCreationConflict,
-    ResourceNotFound,
-    StorageError,
-)
-from .types import ResourceType, StoredResource, UserSpacePath
 
-
-class StorageRepository:
+class S3StorageRepository:
     def __init__(self, s3_client: S3Client, bucket_name: str, chunk_size: int):
         self._bucket_name = bucket_name
         self._chunk_size = chunk_size

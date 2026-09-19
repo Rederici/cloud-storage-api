@@ -17,7 +17,8 @@ from cloud_storage.exceptions import AppError
 from cloud_storage.health import HealthRouter
 from cloud_storage.infrastructure import BotoProvider, RedisProvider, SQLAlchemyProvider
 from cloud_storage.storage import StorageProvider
-from cloud_storage.storage.routes import DirectoryRouter, ResourceRouter
+from cloud_storage.storage.http.routes import DirectoryRouter, ResourceRouter
+from cloud_storage.storage.infrastructure.s3 import S3StorageRepositoryProvider
 
 from .lifespan import Lifespan
 
@@ -60,6 +61,12 @@ class Bootstrap:
         ]
 
     @property
+    def adapter_providers(self) -> list[Provider]:
+        return [
+            S3StorageRepositoryProvider(),
+        ]
+
+    @property
     def infrastructure_providers(self) -> list[Provider]:
         return [
             ConfigProvider(),
@@ -72,6 +79,7 @@ class Bootstrap:
     def container(self) -> AsyncContainer:
         return make_async_container(
             *self.infrastructure_providers,
+            *self.adapter_providers,
             *self.domain_providers,
             *self._override_providers,
             context={Config: self.config},

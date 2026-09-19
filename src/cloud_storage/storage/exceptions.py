@@ -5,11 +5,11 @@ class StorageError(AppError):
     pass
 
 
-class ContentSizeExceeded(AppError):
+class ContentSizeExceeded(StorageError):
     message = "Body is too large"
 
 
-class TooManyFiles(AppError):
+class TooManyFiles(StorageError):
     message = "Too many files"
 
 

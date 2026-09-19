@@ -4,7 +4,7 @@ from types import TracebackType
 from fastapi import FastAPI
 
 from cloud_storage.config import Config
-from cloud_storage.storage.service import StorageInitializer
+from cloud_storage.storage.infrastructure.s3.initializer import StorageInitializer
 
 
 class Lifespan:
