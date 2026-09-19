@@ -1,12 +1,12 @@
 import secrets
 from datetime import timedelta
 
-from cloud_storage.security import DUMMY_HASH, verify_password
+from cloud_storage.security import DUMMY_HASH, hash_password, verify_password
 from cloud_storage.storage import StorageService
-from cloud_storage.user.service import UserService
 
-from .exceptions import InvalidCredentialsError
-from .interface import ISessionRepository
+from .exceptions import InvalidCredentialsError, UserAlreadyExists, UserNotFound
+from .interface import ISessionRepository, IUserRepository
+from .models import User
 from .schemas import AuthorizedDTO, TokenPayload
 
 
@@ -58,3 +58,25 @@ class AuthService:
 
     async def logout(self, token: str) -> None:
         await self._session_service.delete_session(token)
+
+
+class UserService:
+    def __init__(self, user_repo: IUserRepository) -> None:
+        self._user_repo = user_repo
+
+    async def create(self, username: str, password: str) -> User:
+        if await self._user_repo.find_by_username(username) is not None:
+            raise UserAlreadyExists()
+
+        password_hash = hash_password(password)
+        user = await self._user_repo.create(username, password_hash)
+        return user
+
+    async def get_by_id(self, id: int) -> User:
+        user = await self._user_repo.find_by_id(id)
+        if user is None:
+            raise UserNotFound()
+        return user
+
+    async def find_by_username(self, username: str) -> User | None:
+        return await self._user_repo.find_by_username(username)

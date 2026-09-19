@@ -50,3 +50,7 @@ class TokenPayload(BaseModel):
 class AuthorizedDTO(BaseModel):
     username: str
     token: str
+
+
+class UserResponse(BaseModel):
+    username: str

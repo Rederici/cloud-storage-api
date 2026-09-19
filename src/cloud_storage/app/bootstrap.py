@@ -8,9 +8,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException
 
-from cloud_storage.api.http import ErrorResponse, error_handler
-from cloud_storage.api.http.exception_handler import base_error_handler, validation_error_handler
-from cloud_storage.auth import AuthProvider, AuthRouter
+from cloud_storage.api.http.exception_handler import base_error_handler, error_handler, validation_error_handler
+from cloud_storage.api.http.schemas import ErrorResponse
+from cloud_storage.auth import AuthProvider, AuthRouter, UserProvider, UserRouter
 from cloud_storage.config import Config, ConfigProvider
 from cloud_storage.config.models import Env
 from cloud_storage.exceptions import AppError
@@ -18,8 +18,6 @@ from cloud_storage.health import HealthRouter
 from cloud_storage.infrastructure import BotoProvider, RedisProvider, SQLAlchemyProvider
 from cloud_storage.storage import StorageProvider
 from cloud_storage.storage.routes import DirectoryRouter, ResourceRouter
-from cloud_storage.user import UserProvider
-from cloud_storage.user.routes import UserRouter
 
 from .lifespan import Lifespan
 

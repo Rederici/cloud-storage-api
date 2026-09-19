@@ -1,5 +1,5 @@
-from .dependencies import AuthProvider
-from .routes import router as AuthRouter
+from .dependencies import AuthProvider, UserProvider
+from .routes import AuthRouter, UserRouter
 from .service import AuthService, SessionService
 
 __all__ = [
@@ -7,4 +7,6 @@ __all__ = [
     "AuthRouter",
     "AuthService",
     "SessionService",
+    "UserProvider",
+    "UserRouter",
 ]

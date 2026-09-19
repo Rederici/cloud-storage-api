@@ -10,12 +10,13 @@ from starlette.responses import Response
 from cloud_storage.api.http.schemas import ErrorResponse
 from cloud_storage.config import Config
 from cloud_storage.config.models import Env
-from cloud_storage.user.schemas import UserResponse
 
-from .schemas import CredentialsRequest
+from .dependencies import CurrentUser
+from .schemas import CredentialsRequest, UserResponse
 from .service import AuthService
 
-router = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
+AuthRouter = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
+UserRouter = APIRouter(route_class=DishkaRoute, prefix="/users", tags=["User"])
 
 
 def set_token(response: Response, config: Config, token: str):
@@ -28,7 +29,7 @@ def set_token(response: Response, config: Config, token: str):
     )
 
 
-@router.post(
+@AuthRouter.post(
     "/sign-up",
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -47,7 +48,7 @@ async def sign_up(
     return UserResponse(username=authorized.username)
 
 
-@router.post(
+@AuthRouter.post(
     "/sign-in",
     status_code=status.HTTP_200_OK,
     responses={
@@ -66,7 +67,7 @@ async def sign_in(
     return UserResponse(username=authorized.username)
 
 
-@router.post(
+@AuthRouter.post(
     "/sign-out", status_code=status.HTTP_204_NO_CONTENT, responses={204: {"description": "User logout successful"}}
 )
 async def sign_out(
@@ -75,3 +76,15 @@ async def sign_out(
 ):
     if credentials is not None:
         await auth_service.logout(credentials)
+
+
+@UserRouter.get(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"model": UserResponse, "description": "The user's info"},
+        401: {"model": ErrorResponse, "description": "Unauthorized"},
+    },
+)
+async def get_me(user: CurrentUser) -> UserResponse:
+    return UserResponse(username=user.username)

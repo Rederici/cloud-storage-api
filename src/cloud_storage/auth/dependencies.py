@@ -4,16 +4,16 @@ from dishka import FromDishka, Provider, Scope, provide
 from dishka.integrations.fastapi import inject
 from fastapi import Depends
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from cloud_storage.config import Config
 from cloud_storage.security import security
 from cloud_storage.storage import StorageService
-from cloud_storage.user import UserService
-from cloud_storage.user.models import User
 
 from .exceptions import InvalidTokenError
-from .repository import SessionRepository
-from .service import AuthService, SessionService
+from .models import User
+from .repository import SessionRepository, UserRepository
+from .service import AuthService, SessionService, UserService
 
 
 class AuthProvider(Provider):
@@ -60,3 +60,13 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+class UserProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    async def repository(self, session: AsyncSession) -> UserRepository:
+        return UserRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    async def service(self, repository: UserRepository) -> UserService:
+        return UserService(repository)
