@@ -1,8 +1,8 @@
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from alembic import context
 from cloud_storage.auth.models import User
 from cloud_storage.config import Config
 from cloud_storage.infrastructure.sqlalchemy.models import Base
