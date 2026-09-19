@@ -1,5 +1,5 @@
 [project]
-name = "cloud-storage-api"
+name = "cloud-storage"
 version = "0.2.5"
 description = ""
 authors = [
@@ -49,8 +49,8 @@ dev = [
 package = false
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
 
 [tool.ruff]
 line-length = 120
@@ -76,13 +76,16 @@ ignore = [
 ]
 isort = { known-first-party = ["src"] }
 
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 
 [tool.pyright]
 pythonVersion = "3.14"
-executionEnvironments = [{ root = "." }]
+executionEnvironments = [{ root = ".", extraPaths = ["./src"] }]
 typeCheckingMode = "standard"
 include = ["src/", "tests/"]
 exclude = ["**/__pycache__", ".venv", ".cache/"]

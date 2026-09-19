@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from src.config import Config
-from src.persistance.sqlalchemy.models import Base
-from src.user.models import User
+from cloud_storage.config import Config
+from cloud_storage.infrastructure.sqlalchemy.models import Base
+from cloud_storage.user.models import User
 
 assert Base and User
 

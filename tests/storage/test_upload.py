@@ -2,7 +2,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from src.auth.schemas import CredentialsRequest
+from cloud_storage.auth.schemas import CredentialsRequest
 from tests.storage.helpers import TestUpload, upload_resources
 
 

@@ -1,10 +1,9 @@
 from dishka import Provider
 
-from src.app.bootstrap import Bootstrap
-from src.config import ConfigProvider
-from src.persistance import BotoProvider, RedisProvider
-
-from .dependencies import TestPostgresProvider
+from cloud_storage.app.bootstrap import Bootstrap
+from cloud_storage.config import ConfigProvider
+from cloud_storage.infrastructure import BotoProvider, RedisProvider
+from tests.dependencies import TestPostgresProvider
 
 
 class TestBootStrap(Bootstrap):

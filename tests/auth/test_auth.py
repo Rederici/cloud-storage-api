@@ -1,8 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
-from src.auth.schemas import CredentialsRequest
-from src.config import Config
+from cloud_storage.auth.schemas import CredentialsRequest
+from cloud_storage.config import Config
 
 
 async def test_register_success(client: AsyncClient, user: CredentialsRequest, config: Config):

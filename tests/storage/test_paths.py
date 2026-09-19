@@ -1,6 +1,6 @@
 import pytest
 
-from src.storage.types import ResourcePath, UserSpacePath
+from cloud_storage.storage.types import ResourcePath, UserSpacePath
 
 
 @pytest.mark.parametrize(
