@@ -3,11 +3,11 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from cloud_storage.auth.models import User
+from cloud_storage.auth.infrastructure.sqlalchemy.models import Account
 from cloud_storage.config import Config
 from cloud_storage.infrastructure.sqlalchemy.models import Base
 
-assert Base and User
+assert Base and Account
 
 config = context.config
 if config.config_file_name is not None:

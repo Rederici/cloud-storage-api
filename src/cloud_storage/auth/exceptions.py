@@ -13,13 +13,9 @@ class InvalidCredentialsError(AuthError):
     message = "Invalid credentials"
 
 
-class UserError(AppError):
-    pass
-
-
-class UserAlreadyExists(UserError):
+class AccountAlreadyExists(AuthError):
     message = "User already exists"
 
 
-class UserNotFound(UserError):
+class AccountNotFound(AuthError):
     message = "User not found"

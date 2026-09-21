@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -39,17 +37,6 @@ class CredentialsRequest(BaseModel):
     @staticmethod
     def has_special(s: str) -> bool:
         return any(not ch.isalnum() for ch in s)
-
-
-class TokenPayload(BaseModel):
-    user_id: int
-    created_at: datetime
-    last_access: datetime
-
-
-class AuthorizedDTO(BaseModel):
-    username: str
-    token: str
 
 
 class UserResponse(BaseModel):

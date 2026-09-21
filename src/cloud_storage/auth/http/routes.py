@@ -8,12 +8,12 @@ from starlette import status
 from starlette.responses import Response
 
 from cloud_storage.api.http.schemas import ErrorResponse
+from cloud_storage.auth.service import AuthService
 from cloud_storage.config import Config
 from cloud_storage.config.models import Env
 
 from .dependencies import CurrentUser
 from .schemas import CredentialsRequest, UserResponse
-from .service import AuthService
 
 AuthRouter = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
 UserRouter = APIRouter(route_class=DishkaRoute, prefix="/users", tags=["User"])

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, status
 from fastapi.responses import StreamingResponse
 
 from cloud_storage.api.http.schemas import ErrorResponse
-from cloud_storage.auth.dependencies import CurrentUser
+from cloud_storage.auth.http.dependencies import CurrentUser
 from cloud_storage.storage.http.dependencies import VerifiedFiles
 from cloud_storage.storage.http.schemas import (
     AnyPath,

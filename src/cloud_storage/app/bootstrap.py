@@ -10,7 +10,10 @@ from starlette.exceptions import HTTPException
 
 from cloud_storage.api.http.exception_handler import base_error_handler, error_handler, validation_error_handler
 from cloud_storage.api.http.schemas import ErrorResponse
-from cloud_storage.auth import AuthProvider, AuthRouter, UserProvider, UserRouter
+from cloud_storage.auth import AuthProvider
+from cloud_storage.auth.http.routes import AuthRouter, UserRouter
+from cloud_storage.auth.infrastructure.redis import RedisSessionRepositoryProvider
+from cloud_storage.auth.infrastructure.sqlalchemy import SQLAlchemyAccountRepositoryProvider
 from cloud_storage.config import Config, ConfigProvider
 from cloud_storage.config.models import Env
 from cloud_storage.exceptions import AppError
@@ -55,7 +58,6 @@ class Bootstrap:
     @property
     def domain_providers(self) -> list[Provider]:
         return [
-            UserProvider(),
             StorageProvider(),
             AuthProvider(),
         ]
@@ -64,6 +66,8 @@ class Bootstrap:
     def adapter_providers(self) -> list[Provider]:
         return [
             S3StorageRepositoryProvider(),
+            SQLAlchemyAccountRepositoryProvider(),
+            RedisSessionRepositoryProvider(),
         ]
 
     @property

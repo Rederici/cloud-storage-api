@@ -1,4 +1,4 @@
-from cloud_storage.auth.exceptions import AuthError, UserAlreadyExists, UserNotFound
+from cloud_storage.auth.exceptions import AccountAlreadyExists, AccountNotFound, AuthError
 from cloud_storage.exceptions import AppError
 from cloud_storage.storage.exceptions import (
     ContentSizeExceeded,
@@ -12,8 +12,8 @@ from cloud_storage.storage.exceptions import (
 )
 
 mapping: dict[type[AppError], int] = {
-    UserAlreadyExists: 409,
-    UserNotFound: 404,
+    AccountAlreadyExists: 409,
+    AccountNotFound: 404,
     ContentSizeExceeded: 413,
     TooManyFiles: 413,
     ResourceCreationConflict: 409,
