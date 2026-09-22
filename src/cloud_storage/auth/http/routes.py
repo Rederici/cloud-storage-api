@@ -1,9 +1,6 @@
-from typing import Annotated
-
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Depends
-from fastapi.security import APIKeyCookie
+from fastapi import APIRouter
 from starlette import status
 from starlette.responses import Response
 
@@ -12,7 +9,7 @@ from cloud_storage.auth.service import AuthService
 from cloud_storage.config import Config
 from cloud_storage.config.models import Env
 
-from .dependencies import CurrentUser
+from .dependencies import CurrentUser, SessionToken
 from .schemas import CredentialsRequest, UserResponse
 
 AuthRouter = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
@@ -72,10 +69,10 @@ async def sign_in(
 )
 async def sign_out(
     auth_service: FromDishka[AuthService],
-    credentials: Annotated[str, Depends(APIKeyCookie(name="sessionId", auto_error=False))],
+    token: SessionToken,
 ):
-    if credentials is not None:
-        await auth_service.logout(credentials)
+    if token is not None:
+        await auth_service.logout(token)
 
 
 @UserRouter.get(
