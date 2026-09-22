@@ -12,8 +12,11 @@ from cloud_storage.api.http.exception_handler import base_error_handler, error_h
 from cloud_storage.api.http.schemas import ErrorResponse
 from cloud_storage.auth import AuthProvider
 from cloud_storage.auth.http.routes import AuthRouter, UserRouter
-from cloud_storage.auth.infrastructure.redis import RedisSessionRepositoryProvider
-from cloud_storage.auth.infrastructure.sqlalchemy import SQLAlchemyAccountRepositoryProvider
+from cloud_storage.auth.infrastructure import (
+    Argon2PasswordHasherProvider,
+    RedisSessionRepositoryProvider,
+    SQLAlchemyAccountRepositoryProvider,
+)
 from cloud_storage.config import Config, ConfigProvider
 from cloud_storage.config.models import Env
 from cloud_storage.exceptions import AppError
@@ -65,6 +68,7 @@ class Bootstrap:
     @property
     def adapter_providers(self) -> list[Provider]:
         return [
+            Argon2PasswordHasherProvider(),
             S3StorageRepositoryProvider(),
             SQLAlchemyAccountRepositoryProvider(),
             RedisSessionRepositoryProvider(),

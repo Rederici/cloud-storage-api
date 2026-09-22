@@ -1,12 +1,11 @@
 import secrets
 from datetime import UTC, datetime
 
-from cloud_storage.security import DUMMY_HASH, hash_password, verify_password
 from cloud_storage.storage import StorageService
 
 from .entities import Account, Authorized, Session
 from .exceptions import AccountAlreadyExists, AccountNotFound, InvalidCredentialsError
-from .ports import AccountRepository, SessionRepository
+from .ports import AccountRepository, PasswordHasher, SessionRepository
 
 
 class AuthService:
@@ -15,10 +14,12 @@ class AuthService:
         account_repo: AccountRepository,
         session_repo: SessionRepository,
         storage_service: StorageService,
+        password_hasher: PasswordHasher,
     ) -> None:
         self._account_repo = account_repo
         self._session_repo = session_repo
         self._storage_service = storage_service
+        self._hasher = password_hasher
 
     async def register(self, username: str, password: str) -> Authorized:
         account = await self._create_account(username, password)
@@ -28,8 +29,8 @@ class AuthService:
 
     async def login(self, username: str, password: str) -> Authorized:
         account = await self._account_repo.find_by_username(username)
-        password_hash = account.password_hash if account else DUMMY_HASH
-        if not verify_password(password, password_hash) or not account:
+        password_hash = account.password_hash if account else None
+        if not self._hasher.verify(password, password_hash) or not account:
             raise InvalidCredentialsError()
 
         token = await self._create_session(account.id)
@@ -60,7 +61,7 @@ class AuthService:
         if await self._account_repo.find_by_username(username) is not None:
             raise AccountAlreadyExists()
 
-        return await self._account_repo.create(username, hash_password(password))
+        return await self._account_repo.create(username, self._hasher.hash(password))
 
     async def _create_session(self, account_id: int) -> str:
         token = self._generate_token()
