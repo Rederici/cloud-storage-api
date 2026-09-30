@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from src.auth.schemas import CredentialsRequest
+from cloud_storage.auth.http.schemas import CredentialsRequest
 from tests.storage.helpers import create_directory
 
 
