@@ -574,7 +574,7 @@ wheels = [
 [[package]]
 name = "cloud-storage"
 version = "0.2.5"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aioboto3" },
     { name = "alembic" },
