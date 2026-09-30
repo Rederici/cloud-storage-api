@@ -1,3 +1,24 @@
+## v0.2.7 (2026-09-30)
+
+### Fix
+
+- **tests**: resolve pytest import errors
+- **storage**: align recursive default between port and adapter
+- **compose**: fall back to sane defaults when .env vars are unset
+- **deps**: add yaml extra to pydantic-settings for config.yaml support
+- **docker**: set PYTHONPATH to src for cloud_storage package resolution
+
+### Refactor
+
+- **auth**: move cookie security into auth/http/dependencies.py
+- **auth**: extract PasswordHasher port
+- **auth**: restructure module along hexagonal boundaries
+- **storage**: restructure module along hexagonal boundaries
+- rename alembic/ dir to migrations/ to avoid import shadowing
+- merge user service into auth
+- move src/ package into src/cloud_storage/
+- move constant variable to config.yaml
+
 ## v0.2.6 (2026-09-13)
 
 ### Fix

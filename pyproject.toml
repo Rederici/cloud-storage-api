@@ -1,6 +1,6 @@
 [project]
 name = "cloud-storage"
-version = "0.2.6"
+version = "0.2.7"
 description = ""
 authors = [
     { name = "Ivan", email = "rclisbs@gmail.com" }
