@@ -1,3 +1,14 @@
+## v0.2.8 (2026-10-02)
+
+### Fix
+
+- **deps**: bump urllib3 to 2.8.0
+- **api**: correct redoc path from /redocs to /redoc
+
+### Refactor
+
+- **storage**: make user root implicit and move key mapping to s3 adapter
+
 ## v0.2.7 (2026-09-30)
 
 ### Fix
