@@ -1,7 +1,5 @@
 from dishka import Provider, Scope, provide
 
-from cloud_storage.storage import StorageService
-
 from .ports import AccountRepository, PasswordHasher, SessionRepository
 from .service import AuthService
 
@@ -12,12 +10,10 @@ class AuthProvider(Provider):
         self,
         account_repo: AccountRepository,
         session_repo: SessionRepository,
-        storage_service: StorageService,
         password_hasher: PasswordHasher,
     ) -> AuthService:
         return AuthService(
             account_repo=account_repo,
             session_repo=session_repo,
-            storage_service=storage_service,
             password_hasher=password_hasher,
         )

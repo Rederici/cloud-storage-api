@@ -1,3 +1,4 @@
+import re
 from collections.abc import AsyncIterator
 from contextlib import suppress
 from typing import BinaryIO
@@ -16,11 +17,37 @@ from cloud_storage.storage.exceptions import (
 from cloud_storage.storage.types import ResourceType, StoredResource, UserSpacePath
 from cloud_storage.types_stubs import (
     CommonPrefixTypeDef,
-    HeadObjectOutputTypeDef,
     ListObjectsV2RequestPaginateTypeDef,
     ObjectTypeDef,
     S3Client,
 )
+
+STORAGE_SEPARATOR = "/"
+STORAGE_TO_PATH_PATTERN = re.compile(
+    rf"^user-(?P<user_id>[1-9]\d*)-files"
+    rf"(?P<path>{re.escape(STORAGE_SEPARATOR)}.*)?$"
+)
+
+
+def get_user_root(user_id: int) -> str:
+    return f"user-{user_id}-files{STORAGE_SEPARATOR}"
+
+
+def storage_key(path: UserSpacePath) -> str:
+    root = get_user_root(path.user_id)
+    if path.is_root:
+        return root
+    return f"{root}{path.value.lstrip('/')}"
+
+
+def from_storage_key(key: str) -> UserSpacePath:
+    if not (m := re.fullmatch(STORAGE_TO_PATH_PATTERN, key)):
+        raise ValueError("Invalid user space path")
+
+    return UserSpacePath(
+        value=m["path"] or STORAGE_SEPARATOR,
+        user_id=int(m["user_id"]),
+    )
 
 
 class S3StorageRepository:
@@ -30,10 +57,13 @@ class S3StorageRepository:
         self._s3 = s3_client
 
     async def get(self, path: UserSpacePath) -> StoredResource:
+        if path.is_root:
+            return StoredResource(path=path.public_path, size=0, type=ResourceType.DIRECTORY)
+
         try:
             response = await self._s3.head_object(
                 Bucket=self._bucket_name,
-                Key=path.storage_key,
+                Key=storage_key(path),
             )
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
@@ -77,10 +107,10 @@ class S3StorageRepository:
         if source.is_file:
             await self._s3.copy_object(
                 Bucket=self._bucket_name,
-                Key=destination.storage_key,
+                Key=storage_key(destination),
                 CopySource={
                     "Bucket": self._bucket_name,
-                    "Key": source.storage_key,
+                    "Key": storage_key(source),
                 },
             )
             await self._delete_object(source)
@@ -110,10 +140,10 @@ class S3StorageRepository:
             if item.type == ResourceType.FILE:
                 await self._s3.copy_object(
                     Bucket=self._bucket_name,
-                    Key=destination_path.storage_key,
+                    Key=storage_key(destination_path),
                     CopySource={
                         "Bucket": self._bucket_name,
-                        "Key": item_source.storage_key,
+                        "Key": storage_key(item_source),
                     },
                 )
             else:
@@ -144,7 +174,7 @@ class S3StorageRepository:
         try:
             await self._s3.put_object(
                 Bucket=self._bucket_name,
-                Key=path.storage_key,
+                Key=storage_key(path),
                 ContentType="application/x-directory",
                 IfNoneMatch="*",
             )
@@ -161,18 +191,21 @@ class S3StorageRepository:
             raise StorageError() from None
 
     async def _delete_object(self, path: UserSpacePath) -> None:
-        await self._s3.delete_object(Bucket=self._bucket_name, Key=path.storage_key)
+        await self._s3.delete_object(Bucket=self._bucket_name, Key=storage_key(path))
 
     async def delete(self, path: UserSpacePath):
+        if path.is_root:
+            raise InvalidPath(path=path.public_path)
+
         if not await self.exists(path):
-            raise ResourceNotFound(resource=path)
+            raise ResourceNotFound(resource=path.public_path)
 
         if path.is_directory:
             await self._delete_recursive(path)
 
         await self._s3.delete_object(
             Bucket=self._bucket_name,
-            Key=path.storage_key,
+            Key=storage_key(path),
         )
 
     async def _delete_recursive(self, path: UserSpacePath):
@@ -189,7 +222,7 @@ class S3StorageRepository:
         try:
             response = await self._s3.get_object(
                 Bucket=self._bucket_name,
-                Key=path.storage_key,
+                Key=storage_key(path),
             )
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
@@ -214,7 +247,7 @@ class S3StorageRepository:
 
         params: ListObjectsV2RequestPaginateTypeDef = {
             "Bucket": self._bucket_name,
-            "Prefix": path.storage_key,
+            "Prefix": storage_key(path),
             "PaginationConfig": {
                 "PageSize": 1000,
             },
@@ -227,7 +260,7 @@ class S3StorageRepository:
             is_first_page = True
             async for page in paginator.paginate(**params):
                 items = page.get("Contents", [])
-                if is_first_page and not items:
+                if is_first_page and not items and not path.is_root:
                     raise ParentDirectoryDoesNotExist(resource=path)
 
                 if is_first_page:
@@ -237,7 +270,7 @@ class S3StorageRepository:
                     yield self._map_s3_prefix(prefix)
 
                 for item in items:
-                    if item.get("Key") == path.storage_key:
+                    if item.get("Key") == storage_key(path):
                         continue
 
                     yield self._map_s3_object(item)
@@ -276,7 +309,7 @@ class S3StorageRepository:
         try:
             await self._s3.put_object(
                 Bucket=self._bucket_name,
-                Key=path.storage_key,
+                Key=storage_key(path),
                 Body=file,
                 ContentType=content_type or "application/octet-stream",
                 IfNoneMatch="*",
@@ -295,7 +328,7 @@ class S3StorageRepository:
     def _map_s3_object(item: ObjectTypeDef) -> StoredResource:
         key = item.get("Key")
         assert key is not None
-        path = UserSpacePath.from_storage_key(key)
+        path = from_storage_key(key)
         return StoredResource(
             path=path.public_path,
             size=item.get("Size", 0),
@@ -303,18 +336,10 @@ class S3StorageRepository:
         )
 
     @staticmethod
-    def _map_s3_head(path: UserSpacePath, item: HeadObjectOutputTypeDef) -> StoredResource:
-        return StoredResource(
-            path=path.public_path,
-            size=item["ContentLength"],
-            type=ResourceType.FILE,
-        )
-
-    @staticmethod
     def _map_s3_prefix(item: CommonPrefixTypeDef) -> StoredResource:
         key = item.get("Prefix")
         assert key is not None
-        path = UserSpacePath.from_storage_key(key)
+        path = from_storage_key(key)
         return StoredResource(
             path=path.public_path,
             size=0,

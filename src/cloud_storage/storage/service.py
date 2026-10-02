@@ -19,11 +19,6 @@ class StorageService:
     def __init__(self, storage_repo: StorageRepository):
         self._storage_repo = storage_repo
 
-    async def init_root(self, user_id: int) -> None:
-        root = UserSpacePath(value="/", user_id=user_id)
-        if not await self._storage_repo.exists(root):
-            await self._storage_repo.create_directory(root)
-
     async def _ensure_parent_exists(
         self,
         path: ResourcePath,

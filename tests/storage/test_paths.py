@@ -1,5 +1,6 @@
 import pytest
 
+from cloud_storage.storage.infrastructure.s3.repository import from_storage_key, storage_key
 from cloud_storage.storage.types import ResourcePath, UserSpacePath
 
 
@@ -163,7 +164,7 @@ def test_user_space_path_returns_storage_key(
     expected: str,
 ) -> None:
     path = UserSpacePath(value=value, user_id=42)
-    assert path.storage_key == expected
+    assert storage_key(path) == expected
 
 
 def test_user_space_path_returns_public_path() -> None:
@@ -176,7 +177,6 @@ def test_user_space_root() -> None:
 
     assert root.is_root
     assert root.is_directory
-    assert root.storage_key == "user-42-files/"
 
 
 def test_user_space_parent_preserves_user_id() -> None:
@@ -185,7 +185,6 @@ def test_user_space_parent_preserves_user_id() -> None:
     assert isinstance(parent, UserSpacePath)
     assert parent.user_id == 42
     assert parent.value == "/documents/"
-    assert parent.storage_key == "user-42-files/documents/"
 
 
 def test_user_space_join_preserves_user_id() -> None:
@@ -194,7 +193,6 @@ def test_user_space_join_preserves_user_id() -> None:
     assert isinstance(result, UserSpacePath)
     assert result.user_id == 42
     assert result.value == "/documents/report.pdf"
-    assert result.storage_key == "user-42-files/documents/report.pdf"
 
 
 @pytest.mark.parametrize("user_id", [0, -1, -100])
@@ -216,7 +214,7 @@ def test_user_space_path_rejects_invalid_user_id(
     ],
 )
 def test_parse_valid_paths(value, expected_user_id, expected_path):
-    path = UserSpacePath.from_storage_key(value)
+    path = from_storage_key(value)
 
     assert path.user_id == expected_user_id
     assert str(path.public_path) == expected_path
@@ -243,4 +241,4 @@ def test_parse_valid_paths(value, expected_user_id, expected_path):
 )
 def test_parse_invalid_paths(value):
     with pytest.raises(ValueError):
-        UserSpacePath.from_storage_key(value)
+        from_storage_key(value)

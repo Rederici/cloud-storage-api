@@ -1,8 +1,6 @@
 import secrets
 from datetime import UTC, datetime
 
-from cloud_storage.storage import StorageService
-
 from .entities import Account, Authorized, Session
 from .exceptions import AccountAlreadyExists, AccountNotFound, InvalidCredentialsError
 from .ports import AccountRepository, PasswordHasher, SessionRepository
@@ -13,18 +11,15 @@ class AuthService:
         self,
         account_repo: AccountRepository,
         session_repo: SessionRepository,
-        storage_service: StorageService,
         password_hasher: PasswordHasher,
     ) -> None:
         self._account_repo = account_repo
         self._session_repo = session_repo
-        self._storage_service = storage_service
         self._hasher = password_hasher
 
     async def register(self, username: str, password: str) -> Authorized:
         account = await self._create_account(username, password)
         token = await self._create_session(account.id)
-        await self._storage_service.init_root(account.id)
         return Authorized(username=account.username, token=token)
 
     async def login(self, username: str, password: str) -> Authorized:

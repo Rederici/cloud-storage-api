@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import AsyncIterable
 from dataclasses import dataclass
 from enum import StrEnum
@@ -119,36 +118,9 @@ class UserSpacePath(ResourcePath):
             user_id=self.user_id,
         )
 
-    @classmethod
-    def from_storage_key(cls, storage_key: str) -> Self:
-        m = re.fullmatch(
-            rf"^user-(?P<user_id>[1-9]\d*)-files"
-            rf"(?P<path>{re.escape(cls.separator)}.*)?$",
-            storage_key,
-        )
-
-        if not m:
-            raise ValueError("Invalid user space path")
-
-        return cls(
-            value=m["path"] or cls.separator,
-            user_id=int(m["user_id"]),
-        )
-
     @property
     def public_path(self) -> ResourcePath:
         return ResourcePath(self.value)
-
-    @property
-    def user_root(self) -> str:
-        return f"user-{self.user_id}-files{self.separator}"
-
-    @property
-    def storage_key(self) -> str:
-        if self.is_root:
-            return self.user_root
-
-        return f"{self.user_root}{self.value.lstrip('/')}"
 
 
 class ResourceType(StrEnum):
