@@ -100,7 +100,7 @@ class Bootstrap:
             lifespan=Lifespan.context,
             debug=self.config.env != Env.PROD,
             docs_url="/docs" if self.config.swagger_enable else None,
-            redoc_url="/redocs" if self.config.swagger_enable else None,
+            redoc_url="/redoc" if self.config.swagger_enable else None,
             exception_handlers={
                 AppError: error_handler,
                 RequestValidationError: validation_error_handler,
