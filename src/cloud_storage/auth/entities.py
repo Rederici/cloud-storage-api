@@ -7,7 +7,6 @@ class Account:
     id: int
     username: str
     password_hash: str
-    is_active: bool = True
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Account):

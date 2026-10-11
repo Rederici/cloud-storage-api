@@ -44,5 +44,4 @@ class SQLAlchemyAccountRepository:
             id=account.id,
             username=account.username,
             password_hash=account.password_hash,
-            is_active=account.is_active,
         )
