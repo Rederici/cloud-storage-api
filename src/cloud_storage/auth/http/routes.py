@@ -22,6 +22,8 @@ def set_token(response: Response, config: Config, token: str):
         key=config.app.session.cookie_name,
         value=token,
         httponly=True,
+        samesite="lax",
+        path="/",
         secure=config.env == Env.PROD,
         max_age=int(config.app.session.ttl.total_seconds()),
     )
