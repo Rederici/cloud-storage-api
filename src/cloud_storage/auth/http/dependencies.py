@@ -31,7 +31,7 @@ async def get_current_user(
     if session is None:
         raise InvalidTokenError()
 
-    await auth_service.touch_session(token)
+    await auth_service.touch_session(session)
 
     return await auth_service.get_account(session.account_id)
 

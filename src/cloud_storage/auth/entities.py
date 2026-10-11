@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 @dataclass(slots=True, eq=False)
@@ -33,6 +33,9 @@ class Session:
 
     def __hash__(self) -> int:
         return hash(self.token)
+
+    def touch(self):
+        self.last_access = datetime.now(UTC)
 
 
 @dataclass(frozen=True, slots=True)

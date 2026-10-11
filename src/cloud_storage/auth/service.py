@@ -37,12 +37,8 @@ class AuthService:
     async def find_session(self, token: str) -> Session | None:
         return await self._session_repo.get(token)
 
-    async def touch_session(self, token: str) -> None:
-        session = await self._session_repo.get(token)
-        if session is None:
-            return
-
-        session.last_access = datetime.now(UTC)
+    async def touch_session(self, session: Session) -> None:
+        session.touch()
         await self._session_repo.save(session)
 
     async def get_account(self, id: int) -> Account:
