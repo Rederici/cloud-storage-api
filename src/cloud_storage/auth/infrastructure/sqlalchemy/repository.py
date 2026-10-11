@@ -1,7 +1,9 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cloud_storage.auth.entities import Account
+from cloud_storage.auth.exceptions import AccountAlreadyExists
 
 from .models import Account as AccountORM
 
@@ -13,7 +15,14 @@ class SQLAlchemyAccountRepository:
     async def create(self, username: str, password_hash: str) -> Account:
         account = AccountORM(username=username, password_hash=password_hash)
         self._session.add(account)
-        await self._session.flush()
+        try:
+            await self._session.flush()
+        except IntegrityError as e:
+            await self._session.rollback()
+            if getattr(e.orig, "sqlstate", None) == "23505":
+                raise AccountAlreadyExists() from None
+            raise
+
         await self._session.refresh(account)
         return self._to_domain(account)
 
