@@ -1,7 +1,7 @@
 import secrets
 from datetime import UTC, datetime
 
-from .entities import Account, Authorized, Session
+from .entities import Authorized, Principal, Session
 from .exceptions import AccountNotFound, InvalidCredentialsError
 from .ports import AccountRepository, PasswordHasher, SessionRepository
 
@@ -23,13 +23,13 @@ class AuthService:
         return Authorized(username=account.username, token=token)
 
     async def login(self, username: str, password: str) -> Authorized:
-        account = await self._account_repo.find_by_username(username)
-        password_hash = account.password_hash if account else None
-        if not self._hasher.verify(password, password_hash) or not account:
+        credential = await self._account_repo.find_credentials_by_username(username)
+        password_hash = credential.password_hash if credential else None
+        if not self._hasher.verify(password, password_hash) or not credential:
             raise InvalidCredentialsError()
 
-        token = await self._create_session(account.id)
-        return Authorized(username=account.username, token=token)
+        token = await self._create_session(credential.account.id)
+        return Authorized(username=credential.account.username, token=token)
 
     async def logout(self, token: str) -> None:
         await self._session_repo.delete(token)
@@ -41,7 +41,7 @@ class AuthService:
         session.touch()
         await self._session_repo.save(session)
 
-    async def get_account(self, id: int) -> Account:
+    async def get_account(self, id: int) -> Principal:
         account = await self._account_repo.find_by_id(id)
         if account is None:
             raise AccountNotFound()

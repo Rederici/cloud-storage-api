@@ -3,19 +3,24 @@ from datetime import UTC, datetime
 
 
 @dataclass(slots=True, eq=False)
-class Account:
+class Principal:
     id: int
     username: str
-    password_hash: str
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Account):
+        if not isinstance(other, Principal):
             return NotImplemented
 
         return self.id == other.id
 
     def __hash__(self) -> int:
         return hash(self.id)
+
+
+@dataclass(frozen=True, slots=True)
+class Credentials:
+    account: Principal
+    password_hash: str
 
 
 @dataclass(slots=True, eq=False)

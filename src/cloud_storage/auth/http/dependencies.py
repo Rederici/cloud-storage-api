@@ -5,7 +5,7 @@ from dishka.integrations.fastapi import inject
 from fastapi import Depends
 from fastapi.security import APIKeyCookie
 
-from cloud_storage.auth.entities import Account
+from cloud_storage.auth.entities import Principal
 from cloud_storage.auth.exceptions import InvalidTokenError
 from cloud_storage.auth.service import AuthService
 
@@ -23,7 +23,7 @@ SessionToken = Annotated[str | None, Depends(get_token)]
 async def get_current_user(
     token: SessionToken,
     auth_service: FromDishka[AuthService],
-) -> Account:
+) -> Principal:
     if token is None:
         raise InvalidTokenError()
 
@@ -36,4 +36,4 @@ async def get_current_user(
     return await auth_service.get_account(session.account_id)
 
 
-CurrentUser = Annotated[Account, Depends(get_current_user)]
+CurrentUser = Annotated[Principal, Depends(get_current_user)]
