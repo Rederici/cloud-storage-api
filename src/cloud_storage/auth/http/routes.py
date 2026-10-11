@@ -1,6 +1,6 @@
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from starlette import status
 from starlette.responses import Response
 
@@ -11,7 +11,7 @@ from cloud_storage.config import Config
 from cloud_storage.config.models import Env
 
 from .dependencies import CurrentUser, SessionToken
-from .schemas import CredentialsRequest, UserResponse
+from .schemas import SignInRequest, SignUpRequest, UserResponse
 
 AuthRouter = APIRouter(route_class=DishkaRoute, prefix="/auth", tags=["Auth"])
 UserRouter = APIRouter(route_class=DishkaRoute, prefix="/users", tags=["User"])
@@ -40,7 +40,7 @@ def set_token(response: Response, config: Config, token: str):
 async def sign_up(
     config: FromDishka[Config],
     auth_service: FromDishka[AuthService],
-    credentials: CredentialsRequest,
+    credentials: SignUpRequest,
     response: Response,
 ) -> UserResponse:
     authorized = await auth_service.register(credentials.username, credentials.password)
@@ -59,7 +59,7 @@ async def sign_up(
 async def sign_in(
     config: FromDishka[Config],
     auth_service: FromDishka[AuthService],
-    credentials: CredentialsRequest,
+    credentials: SignInRequest,
     response: Response,
 ) -> UserResponse:
     authorized = await auth_service.login(credentials.username, credentials.password)
@@ -68,7 +68,11 @@ async def sign_in(
 
 
 @AuthRouter.post(
-    "/sign-out", status_code=status.HTTP_204_NO_CONTENT, responses={204: {"description": "User logout successful"}}
+    "/sign-out",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        204: {"description": "User logout successful"},
+    },
 )
 async def sign_out(
     response: Response,

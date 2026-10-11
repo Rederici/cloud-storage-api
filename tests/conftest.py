@@ -13,13 +13,13 @@ from asgi_lifespan import LifespanManager
 from dishka import Scope
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from pydantic import SecretStr
+from pydantic import BaseModel, SecretStr
 from testcontainers.core.container import DockerContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
 from cloud_storage.app.bootstrap import Bootstrap
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from cloud_storage.auth.http.schemas import SignUpRequest
 from cloud_storage.config.models import Config, Env, PostgresConfig, RedisConfig, RustfsConfig
 from tests.context import SIGN_UP
 from tests.dependencies import TestPostgresProvider
@@ -130,15 +130,23 @@ async def client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 
 
 @pytest.fixture
-def user() -> CredentialsRequest:
-    return CredentialsRequest(
+def user() -> SignUpRequest:
+    return SignUpRequest(
         username=f"user_{secrets.token_hex(4)}",
         password=f"{secrets.token_hex(6)}_@2Aa{secrets.token_hex(6).upper()}",
     )
 
 
+class UserCredentials(BaseModel):
+    username: str
+    password: str
+
+
 @pytest_asyncio.fixture
-async def registered_user(client: AsyncClient, user: CredentialsRequest) -> CredentialsRequest:
+async def registered_user(client: AsyncClient, user: SignUpRequest) -> UserCredentials:
     resp = await client.post(SIGN_UP, json=user.model_dump())
     assert resp.status_code == 201
-    return user
+    return UserCredentials(
+        username=user.username,
+        password=user.password,
+    )

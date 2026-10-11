@@ -1,13 +1,13 @@
 import pytest
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.conftest import UserCredentials
 from tests.storage.helpers import create_directory
 
 
 async def test_create_directory_in_root(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await create_directory(client, path="/directory/")
     assert response.status_code == 201
@@ -15,7 +15,7 @@ async def test_create_directory_in_root(
 
 async def test_create_nested_directories_sequentially(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     parent_response = await create_directory(client, path="/parent/")
     assert parent_response.status_code == 201
@@ -29,7 +29,7 @@ async def test_create_nested_directories_sequentially(
 
 async def test_cannot_create_directory_when_parent_does_not_exist(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await create_directory(client, "/missing-parent/child/")
     assert response.status_code == 404
@@ -37,7 +37,7 @@ async def test_cannot_create_directory_when_parent_does_not_exist(
 
 async def test_cannot_create_existing_directory(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     path = "/directory/"
 
@@ -75,7 +75,7 @@ async def test_cannot_create_existing_directory(
 )
 async def test_reject_invalid_directory_path(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
     path: str,
 ) -> None:
     response = await create_directory(client, path)

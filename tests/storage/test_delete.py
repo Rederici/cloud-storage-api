@@ -2,7 +2,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.conftest import UserCredentials
 from tests.storage.helpers import (
     TestUpload,
     delete_resource,
@@ -13,7 +13,7 @@ from tests.storage.helpers import (
 @pytest.mark.asyncio
 async def test_delete_existing_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     upload = TestUpload(
         filename="file-to-delete.txt",
@@ -47,7 +47,7 @@ async def test_delete_existing_file(
 @pytest.mark.asyncio
 async def test_delete_missing_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await delete_resource(
         client,
@@ -60,7 +60,7 @@ async def test_delete_missing_file(
 @pytest.mark.asyncio
 async def test_delete_existing_directory_recursively(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     uploads = [
         TestUpload(
@@ -102,7 +102,7 @@ async def test_delete_existing_directory_recursively(
 @pytest.mark.asyncio
 async def test_delete_missing_directory(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await delete_resource(
         client,
@@ -124,7 +124,7 @@ async def test_delete_missing_directory(
 @pytest.mark.asyncio
 async def test_delete_with_invalid_path(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
     path: str,
 ) -> None:
     response = await delete_resource(

@@ -5,14 +5,14 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.conftest import UserCredentials
 from tests.storage.helpers import TestUpload, download_resource, upload_resources
 
 
 @pytest.mark.asyncio
 async def test_download_existing_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     upload = TestUpload(
         filename="file.txt",
@@ -33,7 +33,7 @@ async def test_download_existing_file(
 @pytest.mark.asyncio
 async def test_download_missing_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await download_resource(
         client,
@@ -46,7 +46,7 @@ async def test_download_missing_file(
 @pytest.mark.asyncio
 async def test_download_existing_directory(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     uploads = [
         TestUpload(

@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.conftest import UserCredentials
 from tests.storage.helpers import (
     TestUpload,
     create_directory,
@@ -13,7 +13,7 @@ from tests.storage.helpers import (
 @pytest.mark.asyncio
 async def test_move_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     upload = TestUpload(filename="file.txt", content=b"hello")
     await upload_resources(client, [upload])
@@ -37,7 +37,7 @@ async def test_move_file(
 @pytest.mark.asyncio
 async def test_rename_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     upload = TestUpload(filename="old.txt", content=b"hello")
     await upload_resources(client, [upload])
@@ -60,7 +60,7 @@ async def test_rename_file(
 @pytest.mark.asyncio
 async def test_move_and_rename_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     upload = TestUpload(filename="old.txt", content=b"hello")
     await upload_resources(client, [upload])
@@ -84,7 +84,7 @@ async def test_move_and_rename_file(
 @pytest.mark.asyncio
 async def test_move_directory(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/source/")
     await upload_resources(
@@ -111,7 +111,7 @@ async def test_move_directory(
 @pytest.mark.asyncio
 async def test_move_missing_resource(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     response = await move_resource(
         client,
@@ -125,7 +125,7 @@ async def test_move_missing_resource(
 @pytest.mark.asyncio
 async def test_move_to_existing_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await upload_resources(
         client,
@@ -147,7 +147,7 @@ async def test_move_to_existing_file(
 @pytest.mark.asyncio
 async def test_move_to_existing_directory(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/source/")
     await create_directory(client, "/destination/")
@@ -164,7 +164,7 @@ async def test_move_to_existing_directory(
 @pytest.mark.asyncio
 async def test_move_directory_into_itself(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/source/")
 
@@ -180,7 +180,7 @@ async def test_move_directory_into_itself(
 @pytest.mark.asyncio
 async def test_move_directory_into_nested_path(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/source/")
 
@@ -196,7 +196,7 @@ async def test_move_directory_into_nested_path(
 @pytest.mark.asyncio
 async def test_move_file_to_child_path(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await upload_resources(
         client,
@@ -215,7 +215,7 @@ async def test_move_file_to_child_path(
 @pytest.mark.asyncio
 async def test_move_to_path_with_file_parent(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await upload_resources(
         client,
@@ -237,7 +237,7 @@ async def test_move_to_path_with_file_parent(
 @pytest.mark.asyncio
 async def test_move_file_to_directory_path(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await upload_resources(
         client,
@@ -257,7 +257,7 @@ async def test_move_file_to_directory_path(
 @pytest.mark.asyncio
 async def test_move_directory_to_file_path(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/source/")
     await upload_resources(
@@ -277,7 +277,7 @@ async def test_move_directory_to_file_path(
 @pytest.mark.asyncio
 async def test_move_root(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     response = await move_resource(
         client,

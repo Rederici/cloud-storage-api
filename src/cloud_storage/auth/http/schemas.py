@@ -1,7 +1,12 @@
 from pydantic import BaseModel, Field, field_validator
 
 
-class CredentialsRequest(BaseModel):
+class SignInRequest(BaseModel):
+    username: str = Field(min_length=6, max_length=24, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(min_length=1, max_length=128)
+
+
+class SignUpRequest(BaseModel):
     username: str = Field(min_length=6, max_length=24, pattern=r"^[a-zA-Z0-9_]+$")
     password: str = Field(min_length=8, max_length=64)
 

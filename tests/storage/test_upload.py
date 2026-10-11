@@ -2,7 +2,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.conftest import UserCredentials
 from tests.context import RESOURCES
 from tests.storage.helpers import TestUpload, upload_resources
 
@@ -10,7 +10,7 @@ from tests.storage.helpers import TestUpload, upload_resources
 @pytest.mark.asyncio
 async def test_upload_file_to_root(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     upload = TestUpload(
         filename="file.txt",
@@ -34,7 +34,7 @@ async def test_upload_file_to_root(
 @pytest.mark.asyncio
 async def test_upload_file_to_existing_directory(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     seed = TestUpload(
         filename="documents/seed.txt",
@@ -72,7 +72,7 @@ async def test_upload_file_to_existing_directory(
 @pytest.mark.asyncio
 async def test_upload_file_with_nested_filename(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     upload = TestUpload(
         filename="documents/reports/2026/report.txt",
@@ -99,7 +99,7 @@ async def test_upload_file_with_nested_filename(
 @pytest.mark.asyncio
 async def test_upload_multiple_files(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     uploads = [
         TestUpload(
@@ -149,7 +149,7 @@ async def test_upload_multiple_files(
 @pytest.mark.asyncio
 async def test_upload_directory_tree(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     uploads = [
         TestUpload(
@@ -211,7 +211,7 @@ async def test_upload_directory_tree(
 @pytest.mark.asyncio
 async def test_upload_empty_file(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     upload = TestUpload(
         filename="empty.txt",
@@ -238,7 +238,7 @@ async def test_upload_empty_file(
 @pytest.mark.asyncio
 async def test_upload_preserves_input_order(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     uploads = [
         TestUpload(
@@ -274,7 +274,7 @@ async def test_upload_preserves_input_order(
 @pytest.mark.asyncio
 async def test_upload_existing_file_returns_conflict(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     original = TestUpload(
         filename="file.txt",
@@ -298,7 +298,7 @@ async def test_upload_existing_file_returns_conflict(
 @pytest.mark.asyncio
 async def test_upload_is_atomic_when_file_exists(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     existing = TestUpload(filename="existing.txt", content=b"existing content")
     initial_response = await upload_resources(client, [existing])
@@ -319,7 +319,7 @@ async def test_upload_is_atomic_when_file_exists(
 @pytest.mark.asyncio
 async def test_upload_duplicate_filenames_returns_conflict(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     uploads = [
         TestUpload(
@@ -339,7 +339,7 @@ async def test_upload_duplicate_filenames_returns_conflict(
 @pytest.mark.asyncio
 async def test_upload_to_missing_parent_returns_not_found(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     upload = TestUpload(filename="file.txt", content=b"content")
     response = await upload_resources(client, [upload], path="/missing/")
@@ -359,7 +359,7 @@ async def test_upload_to_missing_parent_returns_not_found(
 @pytest.mark.asyncio
 async def test_upload_with_invalid_parent_path_returns_unprocessable_entity(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
     path: str,
 ) -> None:
     upload = TestUpload(filename="file.txt", content=b"content")
@@ -382,7 +382,7 @@ async def test_upload_with_invalid_parent_path_returns_unprocessable_entity(
 @pytest.mark.asyncio
 async def test_upload_with_invalid_filename_returns_unprocessable_entity(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
     filename: str,
 ) -> None:
     upload = TestUpload(filename=filename, content=b"content")
@@ -393,7 +393,7 @@ async def test_upload_with_invalid_filename_returns_unprocessable_entity(
 @pytest.mark.asyncio
 async def test_upload_without_files_returns_unprocessable_entity(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await client.post(RESOURCES)
     assert response.status_code == 400
@@ -402,7 +402,7 @@ async def test_upload_without_files_returns_unprocessable_entity(
 @pytest.mark.asyncio
 async def test_upload_with_wrong_multipart_field_returns_unprocessable_entity(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ) -> None:
     response = await client.post(
         RESOURCES,

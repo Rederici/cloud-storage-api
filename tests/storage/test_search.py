@@ -1,14 +1,14 @@
 import pytest
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.conftest import UserCredentials
 from tests.storage.helpers import SEARCH, create_directory, search_resources
 
 
 @pytest.mark.asyncio
 async def test_search_resources(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/documents/")
 
@@ -28,7 +28,7 @@ async def test_search_resources(
 @pytest.mark.asyncio
 async def test_search_resources_returns_empty_list(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     response = await search_resources(client, query="not-found")
 
@@ -39,7 +39,7 @@ async def test_search_resources_returns_empty_list(
 @pytest.mark.asyncio
 async def test_search_resources_requires_query(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     response = await client.get(SEARCH)
     assert response.status_code == 400
@@ -48,7 +48,7 @@ async def test_search_resources_requires_query(
 @pytest.mark.asyncio
 async def test_search_resources_rejects_empty_query(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     response = await search_resources(client, query="")
     assert response.status_code == 400
@@ -65,7 +65,7 @@ async def test_search_resources_requires_authentication(
 @pytest.mark.asyncio
 async def test_search_resources_url_encoded_query(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
 ):
     await create_directory(client, "/my documents/")
 

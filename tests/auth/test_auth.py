@@ -1,12 +1,13 @@
 import pytest
 from httpx import AsyncClient
 
-from cloud_storage.auth.http.schemas import CredentialsRequest
+from cloud_storage.auth.http.schemas import SignUpRequest
 from cloud_storage.config import Config
+from tests.conftest import UserCredentials
 from tests.context import ME, SIGN_IN, SIGN_OUT, SIGN_UP
 
 
-async def test_register_success(client: AsyncClient, user: CredentialsRequest, config: Config):
+async def test_register_success(client: AsyncClient, user: SignUpRequest, config: Config):
     response = await client.post(SIGN_UP, json=user.model_dump())
     assert response.status_code == 201
     assert config.app.session.cookie_name in response.cookies
@@ -48,30 +49,30 @@ async def test_register_invalid_payload_returns_400(client: AsyncClient, invalid
     assert response.status_code == 400
 
 
-async def test_register_duplicate_email_returns_409(client: AsyncClient, registered_user: CredentialsRequest):
+async def test_register_duplicate_email_returns_409(client: AsyncClient, registered_user: UserCredentials):
     response = await client.post(SIGN_UP, json=registered_user.model_dump())
     assert response.status_code == 409, response.json()["message"]
 
 
-async def test_login_success(client: AsyncClient, registered_user: CredentialsRequest, config: Config):
+async def test_login_success(client: AsyncClient, registered_user: UserCredentials, config: Config):
     response = await client.post(SIGN_IN, json=registered_user.model_dump())
     assert response.status_code == 200
     assert config.app.session.cookie_name in response.cookies
 
 
-async def test_invalid_username_login_returns_401(client: AsyncClient, registered_user: CredentialsRequest):
+async def test_invalid_username_login_returns_401(client: AsyncClient, registered_user: UserCredentials):
     registered_user.username += "A"
     response = await client.post(SIGN_IN, json=registered_user.model_dump())
     assert response.status_code == 401, response.json()["message"]
 
 
-async def test_invalid_password_login_returns_401(client: AsyncClient, registered_user: CredentialsRequest):
+async def test_invalid_password_login_returns_401(client: AsyncClient, registered_user: UserCredentials):
     registered_user.password += "A"
     response = await client.post(SIGN_IN, json=registered_user.model_dump())
     assert response.status_code == 401
 
 
-async def test_registered_logout_success(client: AsyncClient, registered_user: CredentialsRequest):
+async def test_registered_logout_success(client: AsyncClient, registered_user: UserCredentials):
     response = await client.post(SIGN_OUT)
     assert response.status_code == 204
 
@@ -81,7 +82,7 @@ async def test_unregistered_logout_denies(client: AsyncClient):
     assert response.status_code == 401
 
 
-async def test_get_user_info(client: AsyncClient, registered_user: CredentialsRequest):
+async def test_get_user_info(client: AsyncClient, registered_user: UserCredentials):
     response = await client.get(ME)
     assert response.status_code == 200, response.json()["message"]
     assert response.json().get("username") == registered_user.username
@@ -94,7 +95,7 @@ async def test_get_user_info_with_empty_token_returns_401(client: AsyncClient):
 
 async def test_get_user_info_with_invalid_token_returns_401(
     client: AsyncClient,
-    registered_user: CredentialsRequest,
+    registered_user: UserCredentials,
     config: Config,
 ):
     client.cookies.set(
