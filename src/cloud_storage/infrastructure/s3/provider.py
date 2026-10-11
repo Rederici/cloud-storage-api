@@ -21,7 +21,7 @@ class BotoProvider(Provider):
         async with session.client(  # pyright: ignore[reportGeneralTypeIssues]
             "s3",
             endpoint_url=config.rustfs.url,
-            aws_access_key_id=config.rustfs.access_key,
-            aws_secret_access_key=config.rustfs.secret_key,
+            aws_access_key_id=config.rustfs.access_key.get_secret_value(),
+            aws_secret_access_key=config.rustfs.secret_key.get_secret_value(),
         ) as client:
             yield client

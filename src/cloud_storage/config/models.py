@@ -1,7 +1,7 @@
 from datetime import timedelta
 from enum import StrEnum
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -20,9 +20,9 @@ class PostgresConfig(BaseModel):
 
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
-    database: str = Field(default="postgres", validation_alias=AliasChoices("name", "database"))
-    username: str = Field(default="postgres", validation_alias=AliasChoices("user", "username"))
-    password: SecretStr = Field(default=SecretStr("postgres"), validation_alias=AliasChoices("pass", "password"))
+    database: str = Field(default="postgres")
+    username: str = Field(default="postgres")
+    password: SecretStr = Field(default=SecretStr("postgres"))
 
     def get_dsn(self, sync: bool = False) -> str:
         engine = "psycopg" if sync else "asyncpg"
@@ -32,25 +32,28 @@ class PostgresConfig(BaseModel):
 class RedisConfig(BaseModel):
     host: str = Field(default="localhost")
     port: int = Field(default=6379)
-    username: str | None = Field(default=None, validation_alias=AliasChoices("user", "username"))
-    password: SecretStr | None = Field(default=None, validation_alias=AliasChoices("pass", "password"))
+    username: str | None = Field(default=None)
+    password: SecretStr | None = Field(default=None)
     database: int = Field(default=0, ge=0)
 
     def get_dsn(self) -> str:
-        return f"redis://{self.host}:{self.port}/{self.database}"
+        username = self.username or ""
+        password = self.password.get_secret_value() if self.password else ""
+        return f"redis://{username}:{password}@{self.host}:{self.port}/{self.database}"
 
 
 class RustfsConfig(BaseModel):
     host: str = Field(default="localhost")
     port: int = Field(default=9000)
-    access_key: str = Field(default="rustfs")
-    secret_key: str = Field(default="rustfs")
+    access_key: SecretStr = Field(default=SecretStr("rustfs"))
+    secret_key: SecretStr = Field(default=SecretStr("rustfs"))
     ssl: bool = Field(default=True)
     bucket: str = Field(default="ResourcesBucket")
 
     @property
     def url(self) -> str:
-        return f"{'https' if self.ssl else 'http'}://{self.host}:{self.port}"
+        proto = "https" if self.ssl else "http"
+        return f"{proto}://{self.host}:{self.port}"
 
 
 class CorsConfig(BaseModel):
