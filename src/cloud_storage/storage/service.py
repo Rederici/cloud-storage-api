@@ -5,6 +5,7 @@ from stat import S_IFREG
 from fastapi import UploadFile
 from stream_zip import ZIP_64, Method, async_stream_zip
 
+from .entities import UploadResource
 from .exceptions import (
     InvalidFileName,
     InvalidPath,
@@ -49,7 +50,7 @@ class StorageService:
 
     async def upload_files(
         self,
-        files: list[UploadFile],
+        files: list[UploadResource],
         *,
         path: ResourcePath,
         user_id: int,

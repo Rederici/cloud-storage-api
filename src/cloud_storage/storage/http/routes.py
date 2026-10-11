@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from cloud_storage.api.http.schemas import ErrorResponse
 from cloud_storage.auth.http.dependencies import CurrentUser
+from cloud_storage.storage.entities import UploadResource
 from cloud_storage.storage.http.dependencies import VerifiedFiles
 from cloud_storage.storage.http.schemas import (
     AnyPath,
@@ -139,7 +140,19 @@ async def upload_resource(
     path: Annotated[DirPath, Query()],
     files: VerifiedFiles,
 ) -> list[ResourceResponse]:
-    await storage_service.upload_files(files, path=path, user_id=user.id)
+    await storage_service.upload_files(
+        [
+            UploadResource(
+                filename=file.filename or "UnknownFile",
+                file=file.file,
+                content_type=file.content_type,
+                size=file.size,
+            )
+            for file in files
+        ],
+        path=path,
+        user_id=user.id,
+    )
 
     items = []
     for file in files:
