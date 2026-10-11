@@ -3,6 +3,7 @@ from fastapi import status
 from httpx import AsyncClient
 
 from cloud_storage.auth.http.schemas import CredentialsRequest
+from tests.context import RESOURCES
 from tests.storage.helpers import TestUpload, upload_resources
 
 
@@ -394,7 +395,7 @@ async def test_upload_without_files_returns_unprocessable_entity(
     client: AsyncClient,
     registered_user: CredentialsRequest,
 ) -> None:
-    response = await client.post("/api/v1/resources")
+    response = await client.post(RESOURCES)
     assert response.status_code == 400
 
 
@@ -404,7 +405,7 @@ async def test_upload_with_wrong_multipart_field_returns_unprocessable_entity(
     registered_user: CredentialsRequest,
 ) -> None:
     response = await client.post(
-        "/api/v1/resources",
+        RESOURCES,
         files=[
             (
                 "file",

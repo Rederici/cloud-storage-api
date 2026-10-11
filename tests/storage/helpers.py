@@ -2,12 +2,7 @@ from dataclasses import dataclass
 
 from httpx import AsyncClient, Response
 
-CONTEXT = "/api/v1"
-DIRECTORY_URL = f"{CONTEXT}/directory"
-RESOURCES_URL = f"{CONTEXT}/resources"
-MOVE_URL = f"{RESOURCES_URL}/move"
-DOWNLOAD_URL = f"{RESOURCES_URL}/download"
-SEARCH_URL = f"{RESOURCES_URL}/search"
+from tests.context import DIRECTORY, DOWNLOAD, MOVE, RESOURCES, SEARCH
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +27,7 @@ async def create_directory(
     path: str,
 ) -> Response:
     return await client.post(
-        DIRECTORY_URL,
+        DIRECTORY,
         params={"path": path},
     )
 
@@ -44,7 +39,7 @@ async def upload_resources(
     path: str = "/",
 ) -> Response:
     return await client.post(
-        RESOURCES_URL,
+        RESOURCES,
         params={"path": path},
         files=[upload.as_multipart() for upload in uploads],
     )
@@ -56,7 +51,7 @@ async def delete_resource(
     path: str,
 ):
     return await client.delete(
-        RESOURCES_URL,
+        RESOURCES,
         params={"path": path},
     )
 
@@ -68,7 +63,7 @@ async def move_resource(
     destination: str,
 ):
     return await client.post(
-        MOVE_URL,
+        MOVE,
         params={
             "from": source,
             "to": destination,
@@ -82,7 +77,7 @@ async def download_resource(
     path: str,
 ):
     return await client.get(
-        DOWNLOAD_URL,
+        DOWNLOAD,
         params={"path": path},
     )
 
@@ -93,6 +88,6 @@ async def search_resources(
     query: str,
 ):
     return await client.get(
-        SEARCH_URL,
+        SEARCH,
         params={"query": query},
     )

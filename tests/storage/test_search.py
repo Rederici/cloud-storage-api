@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from cloud_storage.auth.http.schemas import CredentialsRequest
-from tests.storage.helpers import SEARCH_URL, create_directory, search_resources
+from tests.storage.helpers import SEARCH, create_directory, search_resources
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ async def test_search_resources_requires_query(
     client: AsyncClient,
     registered_user: CredentialsRequest,
 ):
-    response = await client.get(SEARCH_URL)
+    response = await client.get(SEARCH)
     assert response.status_code == 400
 
 

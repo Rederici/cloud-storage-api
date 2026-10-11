@@ -21,6 +21,7 @@ from testcontainers.redis import RedisContainer
 from cloud_storage.app.bootstrap import Bootstrap
 from cloud_storage.auth.http.schemas import CredentialsRequest
 from cloud_storage.config.models import Config, Env, PostgresConfig, RedisConfig, RustfsConfig
+from tests.context import SIGN_UP
 from tests.dependencies import TestPostgresProvider
 
 
@@ -138,6 +139,6 @@ def user() -> CredentialsRequest:
 
 @pytest_asyncio.fixture
 async def registered_user(client: AsyncClient, user: CredentialsRequest) -> CredentialsRequest:
-    resp = await client.post("/api/v1/auth/sign-up", json=user.model_dump())
+    resp = await client.post(SIGN_UP, json=user.model_dump())
     assert resp.status_code == 201
     return user
