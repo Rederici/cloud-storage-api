@@ -17,7 +17,7 @@ from cloud_storage.storage.http.schemas import (
 from cloud_storage.storage.service import StorageService
 from cloud_storage.storage.types import ResourceType
 
-ResourceRouter = APIRouter(route_class=DishkaRoute, prefix="/resources", tags=["Resources"])
+ResourceRouter = APIRouter(route_class=DishkaRoute, prefix="/resource", tags=["Resources"])
 DirectoryRouter = APIRouter(route_class=DishkaRoute, prefix="/directory", tags=["Directory"])
 
 

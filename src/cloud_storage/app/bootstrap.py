@@ -125,7 +125,7 @@ class Bootstrap:
             api.include_router(router)
 
         app.include_router(HealthRouter)
-        app.include_router(api, prefix="/api/v1")
+        app.include_router(api, prefix="/api")
 
         app.openapi_schema = self._custom_open_api(app)
 
