@@ -76,9 +76,9 @@ async def test_registered_logout_success(client: AsyncClient, registered_user: C
     assert response.status_code == 204
 
 
-async def test_unregistered_logout_success(client: AsyncClient):
+async def test_unregistered_logout_denies(client: AsyncClient):
     response = await client.post(SIGN_OUT)
-    assert response.status_code == 204
+    assert response.status_code == 401
 
 
 async def test_get_user_info(client: AsyncClient, registered_user: CredentialsRequest):

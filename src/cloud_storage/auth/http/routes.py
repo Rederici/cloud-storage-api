@@ -1,10 +1,11 @@
 from dishka import FromDishka
 from dishka.integrations.fastapi import DishkaRoute
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from starlette import status
 from starlette.responses import Response
 
 from cloud_storage.api.http.schemas import ErrorResponse
+from cloud_storage.auth.exceptions import InvalidTokenError
 from cloud_storage.auth.service import AuthService
 from cloud_storage.config import Config
 from cloud_storage.config.models import Env
@@ -68,11 +69,17 @@ async def sign_in(
     "/sign-out", status_code=status.HTTP_204_NO_CONTENT, responses={204: {"description": "User logout successful"}}
 )
 async def sign_out(
+    response: Response,
     auth_service: FromDishka[AuthService],
     token: SessionToken,
+    config: FromDishka[Config],
 ):
-    if token is not None:
-        await auth_service.logout(token)
+    response.delete_cookie(config.app.session.cookie_name)
+
+    if token is None:
+        raise InvalidTokenError()
+
+    await auth_service.logout(token)
 
 
 @UserRouter.get(
