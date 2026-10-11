@@ -1,7 +1,7 @@
 import secrets
 
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
 
 class Argon2PasswordHasher:
@@ -16,5 +16,5 @@ class Argon2PasswordHasher:
         try:
             self._hasher.verify(hashed_password or self._dummy, password)
             return True
-        except VerifyMismatchError:
+        except VerifyMismatchError, InvalidHashError, VerificationError:
             return False
